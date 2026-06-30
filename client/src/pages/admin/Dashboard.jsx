@@ -87,10 +87,13 @@ export default function Dashboard() {
     setActionError('')
     try {
       const res = await fetch(`${API_URL}/api/orders/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: order.id }),
-      })
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+  },
+  body: JSON.stringify({ orderId: order.id }),
+})
 
       const data = await res.json().catch(() => null)
 
@@ -117,10 +120,13 @@ export default function Dashboard() {
     setActionError('')
     try {
       const res = await fetch(`${API_URL}/api/orders/fulfill`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: order.id }),
-      })
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+  },
+  body: JSON.stringify({ orderId: order.id }),
+})
 
       const data = await res.json().catch(() => null)
 

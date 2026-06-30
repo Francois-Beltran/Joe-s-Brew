@@ -41,11 +41,11 @@ async function getChatId(username) {
   if (!username) return null
   const clean = username.replace('@', '').toLowerCase()
   const { data } = await supabaseAdmin
-    .from('profiles')
-    .select('telegram_chat_id')
-    .eq('telegram_username', clean)
+    .from('telegram_users')
+    .select('chat_id')
+    .eq('username', clean)
     .maybeSingle()
-  return data?.telegram_chat_id ?? null
+  return data?.chat_id ?? null
 }
 
 /**
@@ -72,8 +72,8 @@ router.post('/webhook/telegram', async (req, res) => {
     // Save or update this user's chat ID mapping
     if (username) {
       await supabaseAdmin
-        .from('profiles')
-        .upsert({ telegram_username: username, telegram_chat_id: chatId }, { onConflict: 'telegram_username' })
+        .from('telegram_users')
+        .upsert({ username: username, chat_id: chatId }, { onConflict: 'username' })
     }
 
     // Send welcome message on /start command
