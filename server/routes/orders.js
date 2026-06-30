@@ -111,7 +111,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
         process.env.TELEGRAM_ADMIN_CHAT_ID,
         `✅ <b>Payment Verified</b>\n\n` +
         `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Phone: ${order.customer_phone}\n` +
+        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
         `Telegram: ${order.telegram_username ? '@' + order.telegram_username : 'not provided'}\n` +
         `GCash Ref: <code>${order.gcash_ref}</code>\n` +
         `Amount: ₱${Number(order.total_amount).toFixed(2)}`
@@ -168,7 +168,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
         process.env.TELEGRAM_ADMIN_CHAT_ID,
         `❌ <b>Order Rejected</b>\n\n` +
         `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Phone: ${order.customer_phone}\n` +
+        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
         `Reason: ${finalReason}`
       )
     } catch (tgErr) {
@@ -234,7 +234,7 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
         process.env.TELEGRAM_ADMIN_CHAT_ID,
         `☕ <b>Order Marked Ready</b>\n\n` +
         `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Phone: ${order.customer_phone}\n` +
+        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
         `Amount: ₱${Number(order.total_amount).toFixed(2)}`
       )
     } catch (tgErr) {

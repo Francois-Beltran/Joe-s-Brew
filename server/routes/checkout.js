@@ -29,7 +29,7 @@ const upload = multer({
  * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerPhone, gcashRef, telegramUsername } = req.body
+  const { items: itemsRaw, customerName, gcashRef, telegramUsername } = req.body
   const screenshotFile = req.file
 
   try {
@@ -45,8 +45,8 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: 'Cart is empty' })
     }
 
-    if (!customerPhone?.match(/^\+63\d{10}$/)) {
-      return res.status(400).json({ error: 'Invalid phone number format. Use +63XXXXXXXXXX' })
+    if (!customerName?.trim() || customerName.trim().length < 2) {
+      return res.status(400).json({ error: 'Customer name is required' })
     }
 
     if (!gcashRef?.match(/^\d{13}$/)) {
@@ -138,7 +138,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        customer_phone: customerPhone,
+        customer_name: customerName.trim(),
         status: 'unverified',
         total_amount: totalAmount,
         gcash_ref: gcashRef,

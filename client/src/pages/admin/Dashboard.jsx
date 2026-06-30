@@ -293,7 +293,7 @@ export default function Dashboard() {
                         <p className="font-heading text-brew-brown text-lg">
                           #{order.id.slice(0, 8).toUpperCase()}
                         </p>
-                        <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
+                       <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
                         {order.telegram_username && (
                           <p className="font-body text-xs text-blue-500">@{order.telegram_username}</p>
                         )}

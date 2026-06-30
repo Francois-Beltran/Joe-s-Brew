@@ -13,7 +13,7 @@ import { API_URL } from '../lib/api'
  */
 export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
-  const [phone, setPhone] = useState('')
+  const [customerName, setCustomerName] = useState('')
   const [refNumber, setRefNumber] = useState('')
   const [screenshot, setScreenshot] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -52,9 +52,9 @@ export default function GCashModal({ onClose, onSuccess }) {
    * Validates inputs and submits order to backend
    */
   const handleSubmit = async () => {
-    // Validate phone
-    if (!phone.match(/^\+63\d{10}$/)) {
-      setError('Enter a valid PH number: +639XXXXXXXXX')
+    // Validate customer name
+    if (!customerName.trim()) {
+      setError('Please enter your name.')
       return
     }
     // Validate ref number — GCash ref is 13 digits
@@ -75,7 +75,7 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('items', JSON.stringify(
         cart.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity }))
       ))
-      formData.append('customerPhone', phone)
+      formData.append('customerName', customerName.trim())
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
       formData.append('telegramUsername', telegramUsername)
@@ -120,7 +120,7 @@ export default function GCashModal({ onClose, onSuccess }) {
             <>
               {/* GCash QR */}
               <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-dashed border-brew-brown/30">
-                {/* Swap this div with your real QR: <img src="/images/gcash-qr.png" className="w-48 h-48 rounded-xl" /> */}
+                <img src="/images/gcash-qr.png" className="w-48 h-48 rounded-xl" />
                 <div className="w-48 h-48 bg-brew-beige rounded-xl flex flex-col items-center justify-center mb-3 border border-brew-brown/20">
                   <span className="text-5xl mb-2">📱</span>
                   <p className="font-body text-xs text-brew-brown/50 text-center px-4">
@@ -150,16 +150,16 @@ export default function GCashModal({ onClose, onSuccess }) {
 
               <hr className="border-brew-brown/20" />
 
-              {/* Phone */}
+              {/* Customer Name */}
               <div>
                 <label className="font-body text-sm text-brew-brown/70 mb-1 block">
-                  Your phone number <span className="text-red-500">*</span>
+                  Your name <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="tel"
-                  placeholder="+639XXXXXXXXX"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  type="text"
+                  placeholder="Juan Dela Cruz"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
                   className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown"
                 />
               </div>
@@ -202,7 +202,7 @@ export default function GCashModal({ onClose, onSuccess }) {
 
                 {/* 💡 FIXED: Wrapped attributes in an actual <a> tag */}
                 <a
-href={`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'your_bot'}`}
+                  href={`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'your_bot'}`}
                   target="_blank"
                   rel="noreferrer"
                   className="font-body text-xs text-blue-600 hover:underline mt-2 block"
@@ -257,7 +257,7 @@ href={`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'your
 
               <button
                 onClick={handleSubmit}
-                disabled={loading || !screenshot || !phone || refNumber.length !== 13}
+                disabled={loading || !screenshot || !customerName.trim() || refNumber.length !== 13}
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >
                 {loading ? (
