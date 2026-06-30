@@ -120,13 +120,10 @@ export default function GCashModal({ onClose, onSuccess }) {
             <>
               {/* GCash QR */}
               <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-dashed border-brew-brown/30">
-                <img src="/images/gcash-qr.png" className="w-48 h-48 rounded-xl" />
-                <div className="w-48 h-48 bg-brew-beige rounded-xl flex flex-col items-center justify-center mb-3 border border-brew-brown/20">
-                  <span className="text-5xl mb-2">📱</span>
-                  <p className="font-body text-xs text-brew-brown/50 text-center px-4">
-                    Place your GCash QR here
-                  </p>
-                </div>
+                {/* Your Real QR Image */}
+                <img src="/images/gcash-qr.png" className="w-48 h-48 rounded-xl mb-3" alt="GCash QR Code" />
+
+                {/* Account Info Details */}
                 <p className="font-heading text-brew-brown text-lg tracking-wide">{GCASH_NUMBER}</p>
                 <p className="font-body text-brew-brown/60 text-sm">{GCASH_NAME}</p>
               </div>
