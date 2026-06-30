@@ -23,6 +23,9 @@ export default function AdminGuard({ children }) {
     }
   }
 
+  console.log('Expected:', import.meta.env.VITE_ADMIN_PASSWORD)
+  console.log('Typed:', password)
+
   if (checking) return null
 
   if (!authed) {
