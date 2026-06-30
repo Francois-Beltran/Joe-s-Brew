@@ -7,11 +7,6 @@ router.use(express.json())
 
 /**
  * Sends a Telegram message to a specific chat ID
- * 
- * @param {string} chatId - Telegram chat ID to send message to
- * @param {string} message - Message content with HTML formatting
- * @returns {Promise<Object>} Telegram API response
- * @throws {Error} If Telegram API call fails
  */
 async function sendTelegram(chatId, message) {
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`
@@ -33,9 +28,6 @@ async function sendTelegram(chatId, message) {
 
 /**
  * Looks up a customer's chat ID by their Telegram username
- * 
- * @param {string} username - Telegram username (with or without @)
- * @returns {Promise<string|null>} Chat ID if found, null otherwise
  */
 async function getChatId(username) {
   if (!username) return null
@@ -51,12 +43,6 @@ async function getChatId(username) {
 /**
  * POST /api/orders/webhook/telegram
  * Telegram webhook endpoint for handling user messages
- * Maps Telegram usernames to chat IDs for order notifications
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.body - Telegram webhook payload
- * @param {Object} res - Express response object
- * @returns {void}
  */
 router.post('/webhook/telegram', async (req, res) => {
   const message = req.body?.message
@@ -69,14 +55,12 @@ router.post('/webhook/telegram', async (req, res) => {
   if (!chatId) return res.sendStatus(200)
 
   try {
-    // Save or update this user's chat ID mapping
     if (username) {
       await supabaseAdmin
         .from('telegram_users')
-        .upsert({ username: username, chat_id: chatId }, { onConflict: 'username' })
+        .upsert({ username, chat_id: chatId }, { onConflict: 'username' })
     }
 
-    // Send welcome message on /start command
     if (text === '/start' || text?.startsWith('/start')) {
       await sendTelegram(
         chatId,
@@ -95,13 +79,6 @@ router.post('/webhook/telegram', async (req, res) => {
 /**
  * POST /api/orders/verify
  * Admin endpoint to verify GCash payment and mark order as paid
- * Requires admin authentication via X-Admin-Secret header
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.body - Request body
- * @param {string} req.body.orderId - UUID of the order to verify
- * @param {Object} res - Express response object
- * @returns {Object} JSON response with success status
  */
 router.post('/verify', validateAdmin, async (req, res) => {
   try {
@@ -129,7 +106,6 @@ router.post('/verify', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to verify order' })
     }
 
-    // Notify admin via Telegram
     try {
       await sendTelegram(
         process.env.TELEGRAM_ADMIN_CHAT_ID,
@@ -141,7 +117,46 @@ router.post('/verify', validateAdmin, async (req, res) => {
         `Amount: ₱${Number(order.total_amount).toFixed(2)}`
       )
     } catch (tgErr) {
-      // Non-critical: continue even if Telegram notification fails
+      // Non-critical
+    }
+
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error', detail: error.message })
+  }
+})
+
+/**
+ * POST /api/orders/reject
+ * Admin endpoint to reject a suspicious or invalid payment
+ */
+router.post('/reject', validateAdmin, async (req, res) => {
+  try {
+    const { orderId, reason } = req.body
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId required' })
+    }
+
+    const { data: order, error } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
+
+    if (error || !order) {
+      return res.status(404).json({ error: 'Order not found' })
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('orders')
+      .update({
+        status: 'rejected',
+        rejection_reason: reason || 'Payment could not be verified',
+      })
+      .eq('id', orderId)
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to reject order' })
     }
 
     res.json({ success: true })
@@ -153,13 +168,6 @@ router.post('/verify', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/fulfill
  * Admin endpoint to mark order as ready for pickup and notify customer
- * Requires admin authentication via X-Admin-Secret header
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.body - Request body
- * @param {string} req.body.orderId - UUID of the order to fulfill
- * @param {Object} res - Express response object
- * @returns {Object} JSON response with success status
  */
 router.post('/fulfill', validateAdmin, async (req, res) => {
   try {
@@ -187,7 +195,6 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to update order status' })
     }
 
-    // Notify admin via Telegram
     try {
       await sendTelegram(
         process.env.TELEGRAM_ADMIN_CHAT_ID,
@@ -197,10 +204,9 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
         `Amount: ₱${Number(order.total_amount).toFixed(2)}`
       )
     } catch (tgErr) {
-      // Non-critical: continue even if Telegram notification fails
+      // Non-critical
     }
 
-    // Notify customer via Telegram if they linked their account
     if (order.telegram_username) {
       const chatId = await getChatId(order.telegram_username)
       if (chatId) {
@@ -212,9 +218,35 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
             `Please proceed to the counter. Thank you! 🙏`
           )
         } catch (tgErr) {
-          // Non-critical: continue even if customer notification fails
+          // Non-critical
         }
       }
+    }
+
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error', detail: error.message })
+  }
+})
+
+/**
+ * DELETE /api/orders/:orderId
+ * Admin endpoint to permanently delete an order (cleanup old/test data)
+ */
+router.delete('/:orderId', validateAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId required' })
+    }
+
+    // Delete order items first (foreign key dependency)
+    await supabaseAdmin.from('order_items').delete().eq('order_id', orderId)
+
+    const { error } = await supabaseAdmin.from('orders').delete().eq('id', orderId)
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to delete order' })
     }
 
     res.json({ success: true })

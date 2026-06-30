@@ -4,10 +4,6 @@ import { API_URL } from '../../lib/api'
 
 /**
  * Admin dashboard component for managing orders and inventory
- * Displays orders by status, allows payment verification and order fulfillment,
- * and manages menu item availability
- *
- * @returns {JSX.Element} Admin dashboard UI
  */
 export default function Dashboard() {
   const [orders, setOrders] = useState([])
@@ -19,9 +15,6 @@ export default function Dashboard() {
   const [lightbox, setLightbox] = useState(null)
   const [actionError, setActionError] = useState('')
 
-  /**
-   * Fetches orders from Supabase with related order items
-   */
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
@@ -41,9 +34,6 @@ export default function Dashboard() {
     }
   }
 
-  /**
-   * Fetches menu items from Supabase
-   */
   const fetchMenu = async () => {
     try {
       const { data, error } = await supabase
@@ -77,23 +67,18 @@ export default function Dashboard() {
     return () => supabase.removeChannel(channel)
   }, [])
 
-  /**
-   * Verifies GCash payment for an order
-   *
-   * @param {Object} order - Order object to verify
-   */
   const verifyOrder = async (order) => {
     setVerifying(order.id)
     setActionError('')
     try {
       const res = await fetch(`${API_URL}/api/orders/verify`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
-  },
-  body: JSON.stringify({ orderId: order.id }),
-})
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      })
 
       const data = await res.json().catch(() => null)
 
@@ -110,23 +95,49 @@ export default function Dashboard() {
     }
   }
 
-  /**
-   * Marks order as ready for pickup and notifies customer
-   *
-   * @param {Object} order - Order object to fulfill
-   */
+  const rejectOrder = async (order) => {
+    const reason = prompt('Reason for rejection (optional):')
+    if (reason === null) return
+
+    setVerifying(order.id)
+    setActionError('')
+    try {
+      const res = await fetch(`${API_URL}/api/orders/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+        },
+        body: JSON.stringify({ orderId: order.id, reason }),
+      })
+
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setActionError(data?.error || `Failed to reject (status ${res.status})`)
+        return
+      }
+
+      fetchOrders()
+    } catch (error) {
+      setActionError('Network error: ' + error.message)
+    } finally {
+      setVerifying(null)
+    }
+  }
+
   const markReady = async (order) => {
     setFulfilling(order.id)
     setActionError('')
     try {
       const res = await fetch(`${API_URL}/api/orders/fulfill`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
-  },
-  body: JSON.stringify({ orderId: order.id }),
-})
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      })
 
       const data = await res.json().catch(() => null)
 
@@ -143,11 +154,33 @@ export default function Dashboard() {
     }
   }
 
-  /**
-   * Toggles availability status of a menu item
-   *
-   * @param {Object} item - Menu item to toggle
-   */
+  const deleteOrder = async (order) => {
+    if (!confirm(`Permanently delete order #${order.id.slice(0, 8).toUpperCase()}? This cannot be undone.`)) {
+      return
+    }
+
+    setActionError('')
+    try {
+      const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+        },
+      })
+
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setActionError(data?.error || `Failed to delete (status ${res.status})`)
+        return
+      }
+
+      fetchOrders()
+    } catch (error) {
+      setActionError('Network error: ' + error.message)
+    }
+  }
+
   const toggleAvailability = async (item) => {
     try {
       const { error } = await supabase
@@ -156,7 +189,8 @@ export default function Dashboard() {
         .eq('id', item.id)
 
       if (error) {
-        setActionError('Failed to update item availability')
+        console.error('Toggle availability error:', error)
+        setActionError('Failed to update item availability: ' + error.message)
         return
       }
 
@@ -168,21 +202,20 @@ export default function Dashboard() {
     }
   }
 
-  /**
-   * Filters orders based on active tab
-   */
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'unverified') return ['pending', 'unverified'].includes(o.status)
-    if (activeTab === 'paid') return o.status === 'paid'
+    if (activeTab === 'paid')       return o.status === 'paid'
+    if (activeTab === 'rejected')   return o.status === 'rejected'
     return true
   })
 
   const statusBadge = (status) => {
     const map = {
       unverified: 'bg-amber-100 text-amber-800',
-      pending: 'bg-blue-100 text-blue-800',
-      paid: 'bg-green-100 text-green-800',
-      ready: 'bg-purple-100 text-purple-800',
+      pending:    'bg-blue-100 text-blue-800',
+      paid:       'bg-green-100 text-green-800',
+      ready:      'bg-purple-100 text-purple-800',
+      rejected:   'bg-red-100 text-red-800',
     }
     return map[status] ?? 'bg-gray-100 text-gray-800'
   }
@@ -212,7 +245,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <h2 className="font-heading text-2xl text-brew-brown tracking-wide">ORDERS</h2>
-              {['unverified', 'paid', 'all'].map(tab => (
+              {['unverified', 'paid', 'rejected', 'all'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -244,6 +277,17 @@ export default function Dashboard() {
                 {filteredOrders.map(order => (
                   <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
 
+                    {/* Delete button — top right corner */}
+                    <div className="flex justify-end mb-1">
+                      <button
+                        onClick={() => deleteOrder(order)}
+                        className="text-brew-brown/30 hover:text-red-500 transition-colors text-xs font-body"
+                      >
+                        🗑 Delete
+                      </button>
+                    </div>
+
+                    {/* Order header */}
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-heading text-brew-brown text-lg">
@@ -262,6 +306,14 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                    {/* Rejection reason if applicable */}
+                    {order.status === 'rejected' && order.rejection_reason && (
+                      <p className="font-body text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
+                        Reason: {order.rejection_reason}
+                      </p>
+                    )}
+
+                    {/* Items */}
                     <ul className="mb-3 space-y-1">
                       {order.order_items?.map((oi, i) => (
                         <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
@@ -271,6 +323,7 @@ export default function Dashboard() {
                       ))}
                     </ul>
 
+                    {/* GCash info */}
                     <div className="bg-brew-beige/50 rounded-xl p-3 mb-3 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-body text-xs text-brew-brown/60">GCash Ref</span>
@@ -290,15 +343,25 @@ export default function Dashboard() {
                       )}
                     </div>
 
+                    {/* Action buttons */}
                     <div className="flex gap-2">
                       {['pending', 'unverified'].includes(order.status) && (
-                        <button
-                          onClick={() => verifyOrder(order)}
-                          disabled={verifying === order.id}
-                          className="flex-1 bg-green-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
-                        >
-                          {verifying === order.id ? 'VERIFYING...' : '✓ VERIFY PAYMENT'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => verifyOrder(order)}
+                            disabled={verifying === order.id}
+                            className="flex-1 bg-green-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
+                          >
+                            {verifying === order.id ? 'PROCESSING...' : '✓ VERIFY'}
+                          </button>
+                          <button
+                            onClick={() => rejectOrder(order)}
+                            disabled={verifying === order.id}
+                            className="flex-1 bg-red-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+                          >
+                            ✕ REJECT
+                          </button>
+                        </>
                       )}
                       {order.status === 'paid' && (
                         <button
@@ -312,6 +375,11 @@ export default function Dashboard() {
                       {order.status === 'ready' && (
                         <p className="flex-1 text-center font-body text-xs text-purple-700 py-2">
                           ✓ Picked up / notified
+                        </p>
+                      )}
+                      {order.status === 'rejected' && (
+                        <p className="flex-1 text-center font-body text-xs text-red-700 py-2">
+                          ✕ Rejected
                         </p>
                       )}
                     </div>

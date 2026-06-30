@@ -1,15 +1,17 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useEffect } from 'react'
 
 const CartContext = createContext(null)
+const STORAGE_KEY = 'joesbrew_cart'
 
-/**
- * Cart state reducer
- * Handles cart actions: add item, remove item, update quantity, clear cart
- * 
- * @param {Array<Object>} state - Current cart state
- * @param {Object} action - Action object with type and payload
- * @returns {Array<Object>} New cart state
- */
+function loadCartFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
 function cartReducer(state, action) {
   switch (action.type) {
     case 'ADD_ITEM': {
@@ -33,21 +35,24 @@ function cartReducer(state, action) {
       ).filter(i => i.quantity > 0)
     case 'CLEAR':
       return []
+    case 'HYDRATE':
+      return action.cart
     default:
       return state
   }
 }
 
-/**
- * Cart context provider component
- * Manages shopping cart state and provides cart operations to children
- * 
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components
- * @returns {JSX.Element} Cart context provider
- */
 export function CartProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, [])
+  const [cart, dispatch] = useReducer(cartReducer, [], loadCartFromStorage)
+
+  // Persist to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart))
+    } catch {
+      // localStorage might be full or disabled — fail silently
+    }
+  }, [cart])
 
   const addItem = (item) => dispatch({ type: 'ADD_ITEM', item })
   const removeItem = (menuItemId) => dispatch({ type: 'REMOVE_ITEM', menuItemId })
@@ -63,13 +68,6 @@ export function CartProvider({ children }) {
   )
 }
 
-/**
- * Custom hook to access cart context
- * Provides cart state and operations to components
- * 
- * @returns {Object} Cart context value with cart state and operations
- * @throws {Error} If used outside CartProvider
- */
 export function useCart() {
   return useContext(CartContext)
 }
