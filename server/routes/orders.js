@@ -129,6 +129,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/reject
  * Admin endpoint to reject a suspicious or invalid payment
+ * Notifies customer via Telegram with the rejection reason
  */
 router.post('/reject', validateAdmin, async (req, res) => {
   try {
@@ -147,16 +148,49 @@ router.post('/reject', validateAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' })
     }
 
+    const finalReason = reason || 'Payment could not be verified'
+
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
         status: 'rejected',
-        rejection_reason: reason || 'Payment could not be verified',
+        rejection_reason: finalReason,
       })
       .eq('id', orderId)
 
     if (updateError) {
       return res.status(500).json({ error: 'Failed to reject order' })
+    }
+
+    // Notify admin
+    try {
+      await sendTelegram(
+        process.env.TELEGRAM_ADMIN_CHAT_ID,
+        `❌ <b>Order Rejected</b>\n\n` +
+        `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
+        `Phone: ${order.customer_phone}\n` +
+        `Reason: ${finalReason}`
+      )
+    } catch (tgErr) {
+      // Non-critical
+    }
+
+    // Notify customer if they linked Telegram
+    if (order.telegram_username) {
+      const chatId = await getChatId(order.telegram_username)
+      if (chatId) {
+        try {
+          await sendTelegram(
+            chatId,
+            `⚠️ <b>Order Update</b>\n\n` +
+            `We're sorry, but your order <code>#${orderId.slice(0, 8).toUpperCase()}</code> could not be verified.\n\n` +
+            `<b>Reason:</b> ${finalReason}\n\n` +
+            `If you believe this is a mistake, please visit Joe's Brew with your proof of payment so we can assist you.`
+          )
+        } catch (tgErr) {
+          // Non-critical — order still rejects even if Telegram fails
+        }
+      }
     }
 
     res.json({ success: true })
