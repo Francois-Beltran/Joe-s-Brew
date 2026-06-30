@@ -86,7 +86,7 @@ export default function Dashboard() {
     setVerifying(order.id)
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/orders/verify`, {
+      const res = await fetch(`${API_URL}/api/orders/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: order.id }),
@@ -116,7 +116,7 @@ export default function Dashboard() {
     setFulfilling(order.id)
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/orders/fulfill`, {
+      const res = await fetch(`${API_URL}/api/orders/fulfill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: order.id }),

@@ -80,7 +80,7 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('screenshot', screenshot)
       formData.append('telegramUsername', telegramUsername)
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/checkout`, { method: 'POST', body: formData })
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {
