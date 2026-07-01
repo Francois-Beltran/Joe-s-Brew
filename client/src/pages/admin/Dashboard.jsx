@@ -204,18 +204,18 @@ export default function Dashboard() {
 
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'unverified') return ['pending', 'unverified'].includes(o.status)
-    if (activeTab === 'paid')       return o.status === 'paid'
-    if (activeTab === 'rejected')   return o.status === 'rejected'
+    if (activeTab === 'paid') return o.status === 'paid'
+    if (activeTab === 'rejected') return o.status === 'rejected'
     return true
   })
 
   const statusBadge = (status) => {
     const map = {
       unverified: 'bg-amber-100 text-amber-800',
-      pending:    'bg-blue-100 text-blue-800',
-      paid:       'bg-green-100 text-green-800',
-      ready:      'bg-purple-100 text-purple-800',
-      rejected:   'bg-red-100 text-red-800',
+      pending: 'bg-blue-100 text-blue-800',
+      paid: 'bg-green-100 text-green-800',
+      ready: 'bg-purple-100 text-purple-800',
+      rejected: 'bg-red-100 text-red-800',
     }
     return map[status] ?? 'bg-gray-100 text-gray-800'
   }
@@ -249,11 +249,10 @@ export default function Dashboard() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${
-                    activeTab === tab
+                  className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
                       ? 'bg-brew-brown text-brew-beige border-brew-brown'
                       : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-                  }`}
+                    }`}
                 >
                   {tab.toUpperCase()}
                   {tab === 'unverified' && (
@@ -293,7 +292,7 @@ export default function Dashboard() {
                         <p className="font-heading text-brew-brown text-lg">
                           #{order.id.slice(0, 8).toUpperCase()}
                         </p>
-                       <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
+                        <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
                         {order.telegram_username && (
                           <p className="font-body text-xs text-blue-500">@{order.telegram_username}</p>
                         )}
@@ -393,49 +392,81 @@ export default function Dashboard() {
           {/* Inventory Panel */}
           <div>
             <h2 className="font-heading text-2xl text-brew-brown mb-4 tracking-wide">INVENTORY</h2>
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-brew-brown text-brew-beige">
-                  <tr>
-                    <th className="font-heading text-left px-5 py-3 text-xs tracking-wider">ITEM</th>
-                    <th className="font-heading text-right px-5 py-3 text-xs tracking-wider">PRICE</th>
-                    <th className="font-heading text-center px-5 py-3 text-xs tracking-wider">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brew-beige/40">
-                  {menuItems.map(item => (
-                    <tr key={item.id} className="hover:bg-brew-beige/20 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <p className="font-body font-medium text-brew-brown text-sm">{item.name}</p>
-                            <p className="font-body text-xs text-brew-brown/40">{item.category}</p>
-                          </div>
+
+            {(() => {
+              // Group menu items by category
+              const INVENTORY_ORDER = [
+                'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
+                'Milk Tea', 'Fruity Seltzer', 'Coffee', 'Non-Coffee',
+                'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+              ]
+
+              const grouped = menuItems.reduce((acc, item) => {
+                const cat = item.category || 'Other'
+                if (!acc[cat]) acc[cat] = []
+                acc[cat].push(item)
+                return acc
+              }, {})
+
+              const sortedCats = Object.keys(grouped).sort((a, b) => {
+                const ai = INVENTORY_ORDER.indexOf(a)
+                const bi = INVENTORY_ORDER.indexOf(b)
+                if (ai === -1 && bi === -1) return a.localeCompare(b)
+                if (ai === -1) return 1
+                if (bi === -1) return -1
+                return ai - bi
+              })
+
+              return sortedCats.map(cat => (
+                <div key={cat} className="mb-4">
+                  {/* Category header */}
+                  <div className="bg-brew-brown/10 px-4 py-2 rounded-t-xl">
+                    <p className="font-heading text-sm text-brew-brown tracking-widest">
+                      {cat.toUpperCase()}
+                    </p>
+                  </div>
+
+                  {/* Items in this category */}
+                  <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
+                    {grouped[cat].map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between px-4 py-3 gap-3 ${idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
+                          }`}
+                      >
+                        {/* Item info */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           {item.best_seller && (
-                            <span className="text-amber-400 text-xs">⭐</span>
+                            <span className="text-amber-400 text-xs shrink-0">⭐</span>
                           )}
+                          <div className="min-w-0">
+                            <p className="font-body font-medium text-brew-brown text-sm truncate">
+                              {item.name}
+                            </p>
+                            <p className="font-body text-xs text-brew-brown/40">
+                              ₱{Number(item.price).toFixed(0)}
+                              {item.price_grande ? ` / ₱${Number(item.price_grande).toFixed(0)}` : ''}
+                              {item.price_king ? ` / ₱${Number(item.price_king).toFixed(0)}` : ''}
+                            </p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-5 py-3 text-right font-body text-sm text-brew-brown">
-                        ₱{Number(item.price).toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3 text-center">
+
+                        {/* Toggle button — no longer cut off */}
                         <button
                           onClick={() => toggleAvailability(item)}
-                          className={`px-3 py-1 rounded-full font-heading text-xs tracking-wider transition-colors ${
-                            item.is_available
+                          className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider transition-colors whitespace-nowrap ${item.is_available
                               ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
                               : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
-                          }`}
+                            }`}
                         >
                           {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            })()}
           </div>
 
         </div>

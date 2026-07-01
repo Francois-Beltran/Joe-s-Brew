@@ -3,12 +3,17 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
+import AddonCard from './AddonCard'
 
 gsap.registerPlugin(ScrollTrigger)
 
 // Categories that get horizontal swipe on mobile
 // Desktop always shows grid
-const SWIPE_CATEGORIES = ['Hot Brew', 'Cold Brew', 'Milk Tea', 'Frappe', 'Barista Signature', 'Fruity Seltzer']
+const SWIPE_CATEGORIES = [
+  'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
+  'Milk Tea', 'Fruity Seltzer', 'Coffee', 'Non-Coffee',
+  'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+]
 
 function SwipeRow({ items, categoryName }) {
   const scrollRef = useRef(null)
@@ -64,8 +69,37 @@ function GridSection({ items, categoryName }) {
   )
 }
 
+function AddonRow({ items, categoryName }) {
+  return (
+    <div className="mb-10">
+      <h3 className="font-heading text-2xl text-brew-brown mb-2 px-4 md:px-0 tracking-wide">
+        {categoryName.toUpperCase()}
+      </h3>
+      <p className="font-body text-xs text-brew-brown/50 mb-4 px-4 md:px-0">
+        Tap to add to your order
+      </p>
+      {/* Mobile swipe */}
+      <div
+        className="flex md:hidden gap-3 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {items.map(item => (
+          <div key={item.id} className="snap-start">
+            <AddonCard item={item} />
+          </div>
+        ))}
+      </div>
+      {/* Desktop wrap */}
+      <div className="hidden md:flex flex-wrap gap-3">
+        {items.map(item => (
+          <AddonCard key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  )
+}
 export default function MenuSection() {
-  const [items, setItems]     = useState([])
+  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const sectionRef = useRef(null)
 
@@ -118,6 +152,7 @@ export default function MenuSection() {
     'Nachos',
     'Fries',
     'Food',
+    'Add-ons',
   ]
 
   const grouped = items.reduce((acc, item) => {
@@ -157,19 +192,35 @@ export default function MenuSection() {
               const categoryItems = grouped[category]
               const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
 
-              return isSwipeCategory ? (
-                <SwipeRow
-                  key={category}
-                  categoryName={category}
-                  items={categoryItems}
-                />
-              ) : (
-                <GridSection
-                  key={category}
-                  categoryName={category}
-                  items={categoryItems}
-                />
-              )
+              function AddonRow({ items, categoryName }) {
+                return (
+                  <div className="mb-10">
+                    <h3 className="font-heading text-2xl text-brew-brown mb-2 px-4 md:px-0 tracking-wide">
+                      {categoryName.toUpperCase()}
+                    </h3>
+                    <p className="font-body text-xs text-brew-brown/50 mb-4 px-4 md:px-0">
+                      Tap to add to your order
+                    </p>
+                    {/* Mobile swipe */}
+                    <div
+                      className="flex md:hidden gap-3 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      {items.map(item => (
+                        <div key={item.id} className="snap-start">
+                          <AddonCard item={item} />
+                        </div>
+                      ))}
+                    </div>
+                    {/* Desktop wrap */}
+                    <div className="hidden md:flex flex-wrap gap-3">
+                      {items.map(item => (
+                        <AddonCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
             })}
           </div>
         )}

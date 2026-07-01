@@ -66,7 +66,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     const { data: dbItems, error: dbError } = await supabaseAdmin
       .from('menu_items')
-      .select('id, name, price, price_grande, is_available')
+      .select('id, name, price, price_grande, price_king, is_available')
       .in('id', ids)
 
     if (dbError) {
@@ -95,12 +95,16 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     // Build price map respecting selected size — server always owns the price
     const priceMap = Object.fromEntries(dbItems.map(i => [i.id, {
       base: i.price,
-      grande: i.price_grande ?? i.price, // fallback to base if no grande price
+      grande: i.price_grande ?? i.price,
+      king: i.price_king ?? i.price_grande ?? i.price,
     }]))
 
     const totalAmount = items.reduce((sum, i) => {
       const prices = priceMap[i.menuItemId]
-      const unitPrice = i.size === 'grande' ? prices.grande : prices.base
+      const unitPrice =
+        i.size === 'king' ? prices.king :
+          i.size === 'grande' ? prices.grande :
+            prices.base
       return sum + unitPrice * i.quantity
     }, 0)
 
@@ -164,20 +168,21 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     }
 
     // Insert order items
-    await supabaseAdmin.from('order_items').insert(
+    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(
   items.map(i => ({
-    order_id:     order.id,
+    order_id: order.id,
     menu_item_id: i.menuItemId,
-    quantity:     i.quantity,
-    unit_price:   i.size === 'grande'
-      ? priceMap[i.menuItemId].grande
-      : priceMap[i.menuItemId].base,
+    quantity: i.quantity,
+    unit_price:
+      i.size === 'king'   ? priceMap[i.menuItemId].king   :
+      i.size === 'grande' ? priceMap[i.menuItemId].grande :
+                            priceMap[i.menuItemId].base,
   }))
 )
 
-    if (itemsError) {
-      return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
-    }
+if (itemsError) {
+  return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
+}
 
     res.json({
       success: true,

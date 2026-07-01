@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useCart } from '../hooks/useCart'
 
 function StarRating({ rating }) {
-  const full  = Math.floor(rating)
-  const half  = rating % 1 >= 0.5
+  const full = Math.floor(rating)
+  const half = rating % 1 >= 0.5
   const empty = 5 - full - (half ? 1 : 0)
   return (
     <div className="flex items-center gap-0.5">
-      {[...Array(full)].map((_, i)  => <span key={`f${i}`} className="text-amber-400 text-xs">★</span>)}
-      {half                          &&  <span className="text-amber-400 text-xs">½</span>}
+      {[...Array(full)].map((_, i) => <span key={`f${i}`} className="text-amber-400 text-xs">★</span>)}
+      {half && <span className="text-amber-400 text-xs">½</span>}
       {[...Array(empty)].map((_, i) => <span key={`e${i}`} className="text-brew-brown/20 text-xs">★</span>)}
       <span className="font-body text-xs text-brew-brown/50 ml-1">{Number(rating).toFixed(1)}</span>
     </div>
@@ -21,6 +21,20 @@ export default function MenuCard({ item }) {
 
   // Default to base size
   const [selectedSize, setSelectedSize] = useState('base')
+
+  const hasGrande = item.price_grande != null
+  const hasKing = item.price_king != null
+  const [selectedSize, setSelectedSize] = useState('base')
+
+  const displayPrice =
+    selectedSize === 'king' && hasKing ? item.price_king :
+      selectedSize === 'grande' && hasGrande ? item.price_grande :
+        item.price
+
+  const sizeLabel =
+    selectedSize === 'king' ? (item.size_label_king || 'King') :
+      selectedSize === 'grande' ? (item.size_label_grande || 'Grande') :
+        (item.size_label_base || 'Medio')
 
   const displayPrice = selectedSize === 'grande' && hasGrande
     ? item.price_grande
@@ -36,10 +50,10 @@ export default function MenuCard({ item }) {
 
   const handleAdd = () => {
     addItem({
-      menuItemId:   item.id,
-      name:         item.name,
-      size:         selectedSize,
-      sizeLabel:    sizeLabel,
+      menuItemId: item.id,
+      name: item.name,
+      size: selectedSize,
+      sizeLabel: sizeLabel,
       displayPrice: displayPrice,
     })
   }
@@ -93,30 +107,47 @@ export default function MenuCard({ item }) {
         )}
 
         {/* Size selector — only shown when grande price exists */}
-        {hasGrande && (
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setSelectedSize('base')}
-              className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors ${
-                selectedSize === 'base'
-                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-              }`}
-            >
-              {item.size_label_base || 'Medio'} ₱{Number(item.price).toFixed(0)}
-            </button>
-            <button
-              onClick={() => setSelectedSize('grande')}
-              className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors ${
-                selectedSize === 'grande'
-                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-              }`}
-            >
-              {item.size_label_grande || 'Grande'} ₱{Number(item.price_grande).toFixed(0)}
-            </button>
-          </div>
-        )}
+        {(hasGrande || hasKing) && (
+  <div className="flex gap-1.5 mb-3 flex-wrap">
+    <button
+      onClick={() => setSelectedSize('base')}
+      className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
+        selectedSize === 'base'
+          ? 'bg-brew-brown text-brew-beige border-brew-brown'
+          : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+      }`}
+    >
+      {item.size_label_base || 'Medio'}<br/>
+      <span className="text-[10px]">₱{Number(item.price).toFixed(0)}</span>
+    </button>
+    {hasGrande && (
+      <button
+        onClick={() => setSelectedSize('grande')}
+        className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
+          selectedSize === 'grande'
+            ? 'bg-brew-brown text-brew-beige border-brew-brown'
+            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+        }`}
+      >
+        {item.size_label_grande || 'Grande'}<br/>
+        <span className="text-[10px]">₱{Number(item.price_grande).toFixed(0)}</span>
+      </button>
+    )}
+    {hasKing && (
+      <button
+        onClick={() => setSelectedSize('king')}
+        className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
+          selectedSize === 'king'
+            ? 'bg-brew-brown text-brew-beige border-brew-brown'
+            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+        }`}
+      >
+        {item.size_label_king || 'King'}<br/>
+        <span className="text-[10px]">₱{Number(item.price_king).toFixed(0)}</span>
+      </button>
+    )}
+  </div>
+)}
 
         {/* Single size label when no grande option */}
         {!hasGrande && (
