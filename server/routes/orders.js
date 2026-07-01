@@ -18,9 +18,9 @@ async function sendSMS(phoneNumber, message) {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-  'X-API-Key':    process.env.SMS_API_KEY,
-  'Content-Type': 'application/json',
-},
+      'X-API-Key': process.env.SMS_API_KEY,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       phoneNumber: phoneNumber,
       message: message,
@@ -331,12 +331,30 @@ router.get('/test-sms', async (req, res) => {
     console.log('SMS_API_KEY set:', !!process.env.SMS_API_KEY)
     console.log('ADMIN_PHONE_NUMBER:', process.env.ADMIN_PHONE_NUMBER)
 
-    const result = await sendSMS(
-      process.env.ADMIN_PHONE_NUMBER,
-      "Test SMS from Joe's Brew. If you receive this, SMS gateway is working!"
-    )
+    const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
 
-    res.json({ success: true, result })
+    const smsRes = await fetch(process.env.SMS_GATEWAY_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        phoneNumbers: [process.env.ADMIN_PHONE_NUMBER],
+        message:      "Test SMS from Joe's Brew!",
+      }),
+    })
+
+    // Read raw text first before trying to parse JSON
+    const rawText = await smsRes.text()
+    console.log('SMS response status:', smsRes.status)
+    console.log('SMS response body:', rawText)
+
+    res.json({
+      status: smsRes.status,
+      body:   rawText,
+    })
+
   } catch (error) {
     console.error('Test SMS error:', error.message)
     res.status(500).json({ error: error.message })
