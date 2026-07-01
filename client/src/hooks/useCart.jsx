@@ -15,10 +15,13 @@ function loadCartFromStorage() {
 function cartReducer(state, action) {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existing = state.find(i => i.menuItemId === action.item.menuItemId)
+      // Match by both menuItemId AND size so Medio and Grande are separate cart entries
+      const existing = state.find(i =>
+        i.menuItemId === action.item.menuItemId && i.size === action.item.size
+      )
       if (existing) {
         return state.map(i =>
-          i.menuItemId === action.item.menuItemId
+          i.menuItemId === action.item.menuItemId && i.size === action.item.size
             ? { ...i, quantity: i.quantity + 1 }
             : i
         )
@@ -26,10 +29,12 @@ function cartReducer(state, action) {
       return [...state, { ...action.item, quantity: 1 }]
     }
     case 'REMOVE_ITEM':
-      return state.filter(i => i.menuItemId !== action.menuItemId)
+      return state.filter(i =>
+        !(i.menuItemId === action.menuItemId && i.size === action.size)
+      )
     case 'UPDATE_QTY':
       return state.map(i =>
-        i.menuItemId === action.menuItemId
+        i.menuItemId === action.menuItemId && i.size === action.size
           ? { ...i, quantity: action.quantity }
           : i
       ).filter(i => i.quantity > 0)
@@ -55,8 +60,8 @@ export function CartProvider({ children }) {
   }, [cart])
 
   const addItem = (item) => dispatch({ type: 'ADD_ITEM', item })
-  const removeItem = (menuItemId) => dispatch({ type: 'REMOVE_ITEM', menuItemId })
-  const updateQty = (menuItemId, quantity) => dispatch({ type: 'UPDATE_QTY', menuItemId, quantity })
+  const removeItem = (menuItemId, size) => dispatch({ type: 'REMOVE_ITEM', menuItemId, size })
+const updateQty = (menuItemId, quantity, size) => dispatch({ type: 'UPDATE_QTY', menuItemId, quantity, size })
   const clearCart = () => dispatch({ type: 'CLEAR' })
 
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0)

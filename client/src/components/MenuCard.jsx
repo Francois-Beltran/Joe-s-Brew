@@ -1,60 +1,51 @@
+import { useState } from 'react'
 import { useCart } from '../hooks/useCart'
 
-/**
- * Star rating display component
- * Renders visual star rating with half-star support
- * 
- * @param {Object} props - Component props
- * @param {number} props.rating - Rating value (0-5)
- * @returns {JSX.Element} Star rating UI
- */
 function StarRating({ rating }) {
-  const full = Math.floor(rating)
-  const half = rating % 1 >= 0.5
+  const full  = Math.floor(rating)
+  const half  = rating % 1 >= 0.5
   const empty = 5 - full - (half ? 1 : 0)
-
   return (
-    <div className="flex items-center gap-1">
-      {[...Array(full)].map((_, i) => <span key={`f${i}`} className="text-amber-400 text-sm">★</span>)}
-      {half && <span className="text-amber-400 text-sm">½</span>}
-      {[...Array(empty)].map((_, i) => <span key={`e${i}`} className="text-brew-brown/20 text-sm">★</span>)}
+    <div className="flex items-center gap-0.5">
+      {[...Array(full)].map((_, i)  => <span key={`f${i}`} className="text-amber-400 text-xs">★</span>)}
+      {half                          &&  <span className="text-amber-400 text-xs">½</span>}
+      {[...Array(empty)].map((_, i) => <span key={`e${i}`} className="text-brew-brown/20 text-xs">★</span>)}
       <span className="font-body text-xs text-brew-brown/50 ml-1">{Number(rating).toFixed(1)}</span>
     </div>
   )
 }
 
-/**
- * Menu item card component
- * Displays menu item with image, price, rating, and add to cart button
- * 
- * @param {Object} props - Component props
- * @param {Object} props.item - Menu item data
- * @param {string} props.item.id - Item ID
- * @param {string} props.item.name - Item name
- * @param {number} props.item.price - Item price
- * @param {string} props.item.description - Item description
- * @param {string} props.item.image_url - Item image URL
- * @param {number} props.item.rating - Item rating (0-5)
- * @param {boolean} props.item.best_seller - Whether item is a best seller
- * @returns {JSX.Element} Menu card UI
- */
 export default function MenuCard({ item }) {
   const { addItem, cart } = useCart()
-  const inCart = cart.find(i => i.menuItemId === item.id)
+  const hasGrande = item.price_grande != null
 
-  /**
-   * Handles adding item to cart
-   */
+  // Default to base size
+  const [selectedSize, setSelectedSize] = useState('base')
+
+  const displayPrice = selectedSize === 'grande' && hasGrande
+    ? item.price_grande
+    : item.price
+
+  const sizeLabel = selectedSize === 'grande'
+    ? (item.size_label_grande || 'Grande')
+    : (item.size_label_base || 'Medio')
+
+  const inCart = cart.find(i =>
+    i.menuItemId === item.id && i.size === selectedSize
+  )
+
   const handleAdd = () => {
     addItem({
-      menuItemId: item.id,
-      name: item.name,
-      displayPrice: item.price,
+      menuItemId:   item.id,
+      name:         item.name,
+      size:         selectedSize,
+      sizeLabel:    sizeLabel,
+      displayPrice: displayPrice,
     })
   }
 
   return (
-    <div className="bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative">
+    <div className="bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full">
 
       {/* Best Seller badge */}
       {item.best_seller && (
@@ -65,7 +56,7 @@ export default function MenuCard({ item }) {
 
       {/* Image */}
       {item.image_url ? (
-        <div className="relative overflow-hidden h-52">
+        <div className="relative overflow-hidden h-44 shrink-0">
           <img
             src={item.image_url}
             alt={item.name}
@@ -73,16 +64,17 @@ export default function MenuCard({ item }) {
           />
         </div>
       ) : (
-        <div className="w-full h-52 bg-brew-brown/20 flex items-center justify-center">
-          <span className="text-5xl">☕</span>
+        <div className="w-full h-44 bg-brew-brown/20 flex items-center justify-center shrink-0">
+          <span className="text-4xl">☕</span>
         </div>
       )}
 
-      <div className="p-5 flex flex-col flex-1">
+      <div className="p-4 flex flex-col flex-1">
+        {/* Name + Price */}
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-heading text-xl text-brew-brown leading-tight">{item.name}</h3>
+          <h3 className="font-heading text-lg text-brew-brown leading-tight">{item.name}</h3>
           <span className="font-heading text-lg text-brew-brown shrink-0">
-            ₱{Number(item.price).toFixed(2)}
+            ₱{Number(displayPrice).toFixed(2)}
           </span>
         </div>
 
@@ -93,15 +85,49 @@ export default function MenuCard({ item }) {
           </div>
         )}
 
+        {/* Description */}
         {item.description && (
-          <p className="font-body text-sm text-brew-brown/70 mb-4 flex-1 leading-relaxed">
+          <p className="font-body text-xs text-brew-brown/70 mb-3 flex-1 leading-relaxed line-clamp-2">
             {item.description}
+          </p>
+        )}
+
+        {/* Size selector — only shown when grande price exists */}
+        {hasGrande && (
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setSelectedSize('base')}
+              className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors ${
+                selectedSize === 'base'
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+              }`}
+            >
+              {item.size_label_base || 'Medio'} ₱{Number(item.price).toFixed(0)}
+            </button>
+            <button
+              onClick={() => setSelectedSize('grande')}
+              className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors ${
+                selectedSize === 'grande'
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+              }`}
+            >
+              {item.size_label_grande || 'Grande'} ₱{Number(item.price_grande).toFixed(0)}
+            </button>
+          </div>
+        )}
+
+        {/* Single size label when no grande option */}
+        {!hasGrande && (
+          <p className="font-body text-xs text-brew-brown/50 mb-3">
+            {item.size_label_base || 'One Size'}
           </p>
         )}
 
         <button
           onClick={handleAdd}
-          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark transition-colors"
+          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark transition-colors text-sm"
         >
           {inCart ? `ADD AGAIN (${inCart.quantity} in cart)` : 'ADD TO CART'}
         </button>

@@ -66,7 +66,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     const { data: dbItems, error: dbError } = await supabaseAdmin
       .from('menu_items')
-      .select('id, name, price, is_available')
+      .select('id, name, price, price_grande, is_available')
       .in('id', ids)
 
     if (dbError) {
@@ -92,11 +92,17 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       })
     }
 
-    // Compute server-side total to prevent client manipulation
-    const priceMap = Object.fromEntries(dbItems.map(i => [i.id, i.price]))
-    const totalAmount = items.reduce(
-      (sum, i) => sum + priceMap[i.menuItemId] * i.quantity, 0
-    )
+    // Build price map respecting selected size — server always owns the price
+    const priceMap = Object.fromEntries(dbItems.map(i => [i.id, {
+      base: i.price,
+      grande: i.price_grande ?? i.price, // fallback to base if no grande price
+    }]))
+
+    const totalAmount = items.reduce((sum, i) => {
+      const prices = priceMap[i.menuItemId]
+      const unitPrice = i.size === 'grande' ? prices.grande : prices.base
+      return sum + unitPrice * i.quantity
+    }, 0)
 
     // Check for duplicate reference number to prevent fraud
     const { data: duplicate } = await supabaseAdmin
@@ -158,14 +164,16 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     }
 
     // Insert order items
-    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(
-      items.map(i => ({
-        order_id: order.id,
-        menu_item_id: i.menuItemId,
-        quantity: i.quantity,
-        unit_price: priceMap[i.menuItemId],
-      }))
-    )
+    await supabaseAdmin.from('order_items').insert(
+  items.map(i => ({
+    order_id:     order.id,
+    menu_item_id: i.menuItemId,
+    quantity:     i.quantity,
+    unit_price:   i.size === 'grande'
+      ? priceMap[i.menuItemId].grande
+      : priceMap[i.menuItemId].base,
+  }))
+)
 
     if (itemsError) {
       return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })

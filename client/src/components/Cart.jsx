@@ -53,25 +53,26 @@ export default function Cart({ onClose }) {
                   <li key={item.menuItemId} className="flex items-center gap-4">
                     <div className="flex-1">
                       <p className="font-heading text-brew-brown">{item.name}</p>
-                      <p className="font-body text-sm text-brew-brown/60">
+                      <p className="font-body text-xs text-brew-brown/50">
+                        {item.sizeLabel && item.sizeLabel !== 'One Size' ? item.sizeLabel + ' · ' : ''}
                         ₱{Number(item.displayPrice).toFixed(2)} each
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => updateQty(item.menuItemId, item.quantity - 1)}
+                        onClick={() => updateQty(item.menuItemId, item.quantity - 1, item.size)}
                         className="w-7 h-7 rounded-full border border-brew-brown text-brew-brown flex items-center justify-center hover:bg-brew-brown hover:text-brew-beige transition-colors"
                       >−</button>
                       <span className="font-body w-6 text-center text-brew-brown">{item.quantity}</span>
                       <button
-                        onClick={() => updateQty(item.menuItemId, item.quantity + 1)}
+                        onClick={() => updateQty(item.menuItemId, item.quantity + 1, item.size)}
                         className="w-7 h-7 rounded-full border border-brew-brown text-brew-brown flex items-center justify-center hover:bg-brew-brown hover:text-brew-beige transition-colors"
                       >+</button>
                     </div>
 
                     <button
-                      onClick={() => removeItem(item.menuItemId)}
+                      onClick={() => removeItem(item.menuItemId, item.size)}
                       className="text-brew-brown/40 hover:text-red-500 transition-colors text-sm"
                     >✕</button>
                   </li>

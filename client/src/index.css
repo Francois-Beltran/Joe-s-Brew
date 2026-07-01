@@ -23,3 +23,8 @@ body {
 h1, h2, h3, h4 {
   font-family: 'Oswald', sans-serif;
 }
+
+/* Hide scrollbar for swipe rows on mobile */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

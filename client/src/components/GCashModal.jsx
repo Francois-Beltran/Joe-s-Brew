@@ -4,20 +4,20 @@ import { API_URL } from '../lib/api'
 
 export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
-  const [customerName, setCustomerName]   = useState('')
+  const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [refNumber, setRefNumber]         = useState('')
-  const [screenshot, setScreenshot]       = useState(null)
-  const [preview, setPreview]             = useState(null)
-  const [loading, setLoading]             = useState(false)
-  const [error, setError]                 = useState('')
-  const [stage, setStage]                 = useState('instructions')
-  const [result, setResult]               = useState(null)
+  const [refNumber, setRefNumber] = useState('')
+  const [screenshot, setScreenshot] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [stage, setStage] = useState('instructions')
+  const [result, setResult] = useState(null)
   const fileInputRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09XXXXXXXXX'
-  const GCASH_NAME   = import.meta.env.VITE_GCASH_NAME   || 'Joe Dela Cruz'
+  const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'Joe Dela Cruz'
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
@@ -57,14 +57,14 @@ export default function GCashModal({ onClose, onSuccess }) {
     try {
       const formData = new FormData()
       formData.append('items', JSON.stringify(
-        cart.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity }))
+        cart.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity, size: i.size || 'base' }))
       ))
-      formData.append('customerName',  customerName.trim())
+      formData.append('customerName', customerName.trim())
       formData.append('customerPhone', customerPhone)
-      formData.append('gcashRef',      refNumber)
-      formData.append('screenshot',    screenshot)
+      formData.append('gcashRef', refNumber)
+      formData.append('screenshot', screenshot)
 
-      const res  = await fetch(`${API_URL}/api/checkout`, { method: 'POST', body: formData })
+      const res = await fetch(`${API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {

@@ -6,36 +6,79 @@ import MenuCard from './MenuCard'
 
 gsap.registerPlugin(ScrollTrigger)
 
-/**
- * Menu section component displaying available menu items
- * Fetches items from Supabase, supports category filtering, and animates cards on scroll
- * 
- * @returns {JSX.Element} Menu section UI
- */
+// Categories that get horizontal swipe on mobile
+// Desktop always shows grid
+const SWIPE_CATEGORIES = ['Hot Brew', 'Cold Brew', 'Milk Tea', 'Frappe', 'Barista Signature', 'Fruity Seltzer']
+
+function SwipeRow({ items, categoryName }) {
+  const scrollRef = useRef(null)
+
+  return (
+    <div className="mb-10">
+      <h3 className="font-heading text-2xl text-brew-brown mb-4 px-4 md:px-0 tracking-wide">
+        {categoryName.toUpperCase()}
+      </h3>
+
+      {/* Mobile: horizontal swipe */}
+      <div
+        ref={scrollRef}
+        className="flex md:hidden gap-4 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {items.map(item => (
+          <div
+            key={item.id}
+            className="shrink-0 w-64 snap-start"
+          >
+            <MenuCard item={item} />
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: normal grid */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {items.map(item => (
+          <div key={item.id} className="menu-card">
+            <MenuCard item={item} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function GridSection({ items, categoryName }) {
+  return (
+    <div className="mb-10">
+      <h3 className="font-heading text-2xl text-brew-brown mb-4 tracking-wide">
+        {categoryName.toUpperCase()}
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {items.map(item => (
+          <div key={item.id} className="menu-card">
+            <MenuCard item={item} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function MenuSection() {
-  const [items, setItems] = useState([])
+  const [items, setItems]     = useState([])
   const [loading, setLoading] = useState(true)
-  const [category, setCategory] = useState('All')
   const sectionRef = useRef(null)
 
-  /**
-   * Fetches available menu items from Supabase
-   */
   useEffect(() => {
     async function fetchMenu() {
-      try {
-        const { data, error } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('is_available', true)
-          .order('category')
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('category')
 
-        if (!error) setItems(data)
-      } catch (error) {
-        // Handle error silently or show toast notification
-      } finally {
-        setLoading(false)
-      }
+      if (!error) setItems(data ?? [])
+      setLoading(false)
     }
     fetchMenu()
   }, [])
@@ -48,8 +91,8 @@ export default function MenuSection() {
         {
           opacity: 1,
           y: 0,
-          stagger: 0.1,
-          duration: 0.6,
+          stagger: 0.07,
+          duration: 0.5,
           ease: 'power2.out',
           scrollTrigger: {
             trigger: sectionRef.current,
@@ -58,55 +101,76 @@ export default function MenuSection() {
         }
       )
     }
-  }, [loading, category])
+  }, [loading])
 
-  const categories = ['All', ...new Set(items.map(i => i.category).filter(Boolean))]
-  const filtered   = category === 'All' ? items : items.filter(i => i.category === category)
+  // Group items by category, preserving a sensible order
+  const CATEGORY_ORDER = [
+    'Hot Brew',
+    'Cold Brew',
+    'Barista Signature',
+    'Frappe',
+    'Milk Tea',
+    'Fruity Seltzer',
+    'Coffee',
+    'Non-Coffee',
+    'Takoyaki',
+    'Waffles',
+    'Nachos',
+    'Fries',
+    'Food',
+  ]
+
+  const grouped = items.reduce((acc, item) => {
+    const cat = item.category || 'Other'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(item)
+    return acc
+  }, {})
+
+  // Sort categories by preferred order, unknown ones go at the end
+  const sortedCategories = Object.keys(grouped).sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a)
+    const bi = CATEGORY_ORDER.indexOf(b)
+    if (ai === -1 && bi === -1) return a.localeCompare(b)
+    if (ai === -1) return 1
+    if (bi === -1) return -1
+    return ai - bi
+  })
 
   return (
-    <section id="menu" ref={sectionRef} className="bg-brew-beige py-24 px-6">
-      <div className="max-w-6xl mx-auto">
+    <section id="menu" ref={sectionRef} className="bg-brew-beige py-20 px-4 md:px-6">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-14">
           <p className="font-body text-brew-brown/60 tracking-widest text-sm uppercase mb-2">
             What we're serving
           </p>
-          <h2 className="font-heading text-6xl text-brew-brown">OUR MENU</h2>
+          <h2 className="font-heading text-5xl md:text-6xl text-brew-brown">OUR MENU</h2>
         </div>
-
-        {/* Category filter */}
-        {categories.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`font-heading tracking-wider px-6 py-2 rounded-full border-2 transition-all ${
-                  category === cat
-                    ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                    : 'text-brew-brown border-brew-brown/40 hover:border-brew-brown'
-                }`}
-              >
-                {cat.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
 
         {loading ? (
           <div className="text-center py-20 font-heading text-3xl text-brew-brown/40 tracking-widest">
             BREWING...
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 font-body text-brew-brown/60">
-            No items available right now.
-          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filtered.map(item => (
-              <div key={item.id} className="menu-card">
-                <MenuCard item={item} />
-              </div>
-            ))}
+          <div>
+            {sortedCategories.map(category => {
+              const categoryItems = grouped[category]
+              const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
+
+              return isSwipeCategory ? (
+                <SwipeRow
+                  key={category}
+                  categoryName={category}
+                  items={categoryItems}
+                />
+              ) : (
+                <GridSection
+                  key={category}
+                  categoryName={category}
+                  items={categoryItems}
+                />
+              )
+            })}
           </div>
         )}
       </div>
