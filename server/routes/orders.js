@@ -142,6 +142,25 @@ router.post('/verify', validateAdmin, async (req, res) => {
       console.error('Admin SMS notify error (verify):', smsErr.message)
     }
 
+    // Notify customer that payment was received and order is being prepared
+    if (order.customer_phone) {
+      try {
+        await sendSMS(
+          order.customer_phone,
+          toPlainText(
+            `✅ Payment Confirmed!\n\n` +
+            `Hi ${order.customer_name || 'there'}! Your Joe's Brew payment has been verified.\n\n` +
+            `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
+            `Amount: PHP ${Number(order.total_amount).toFixed(2)}\n\n` +
+            `We're now preparing your order. We'll text you again when it's ready for pickup!`
+          )
+        )
+      } catch (smsErr) {
+        // Non-critical: order is still verified even if customer SMS fails
+        console.error('Customer SMS notify error (verify):', smsErr.message)
+      }
+    }
+
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error', detail: error.message })
