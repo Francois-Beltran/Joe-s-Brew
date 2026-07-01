@@ -33,7 +33,7 @@ function SwipeRow({ items, categoryName }) {
         {items.map(item => (
           <div
             key={item.id}
-            className="shrink-0 w-64 snap-start"
+            className="menu-card shrink-0 w-64 snap-start"
           >
             <MenuCard item={item} />
           </div>
@@ -119,21 +119,24 @@ export default function MenuSection() {
 
   useEffect(() => {
     if (!loading) {
-      gsap.fromTo(
-        '.menu-card',
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          stagger: 0.07,
-          duration: 0.5,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-          },
-        }
-      )
+      const cards = sectionRef.current?.querySelectorAll('.menu-card')
+      if (cards && cards.length > 0) {
+        gsap.fromTo(
+          cards,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.07,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top 80%',
+            },
+          }
+        )
+      }
     }
   }, [loading])
 
