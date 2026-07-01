@@ -5,52 +5,61 @@ import { validateAdmin } from '../middleware/validateAdmin.js'
 const router = express.Router()
 router.use(express.json())
 
-/**
- * Sends a Telegram message to a specific chat ID
- */
-async function sendTelegram(chatId, message) {
-  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATION HELPER
+// Previously: Telegram Bot API (api.telegram.org)
+// Now: Android SMS Gateway (process.env.SMS_GATEWAY_URL)
+//
+// TO CHANGE SMS GATEWAY: update SMS_GATEWAY_URL and SMS_API_KEY in server/.env
+// ─────────────────────────────────────────────────────────────────────────────
+async function sendSMS(phoneNumber, message) {
+  const url = process.env.SMS_GATEWAY_URL
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'x-api-key':   process.env.SMS_API_KEY,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: 'HTML',
+      number:  phoneNumber,
+      message: message,
     }),
   })
+
   const data = await res.json()
-  if (!data.ok) {
-    throw new Error(`Telegram error: ${data.description}`)
+  if (!res.ok) {
+    throw new Error(`SMS Gateway error: ${JSON.stringify(data)}`)
   }
   return data
 }
 
-/**
- * Looks up a customer's chat ID by their Telegram username
- */
-async function getChatId(username) {
-  if (!username) return null
-  const clean = username.replace('@', '').toLowerCase()
-  const { data } = await supabaseAdmin
-    .from('telegram_users')
-    .select('chat_id')
-    .eq('username', clean)
-    .maybeSingle()
-  return data?.chat_id ?? null
+// ─────────────────────────────────────────────────────────────────────────────
+// Strips Telegram-specific HTML tags (e.g. <b>, <code>) to plain text for SMS
+// ─────────────────────────────────────────────────────────────────────────────
+function toPlainText(str) {
+  return str
+    .replace(/<b>(.*?)<\/b>/g, '$1')
+    .replace(/<code>(.*?)<\/code>/g, '$1')
+    .replace(/<i>(.*?)<\/i>/g, '$1')
+    .replace(/<a[^>]*>(.*?)<\/a>/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .trim()
 }
 
 /**
  * POST /api/orders/webhook/telegram
- * Telegram webhook endpoint for handling user messages
+ * Retained exactly — webhook route structure unchanged
+ * Note: This route is now unused for notifications but kept to avoid
+ * breaking any registered Telegram webhook still pointing here
  */
 router.post('/webhook/telegram', async (req, res) => {
   const message = req.body?.message
   if (!message) return res.sendStatus(200)
 
-  const chatId = message.chat?.id?.toString()
+  const chatId   = message.chat?.id?.toString()
   const username = message.from?.username?.toLowerCase()
-  const text = message.text?.trim()
+  const text     = message.text?.trim()
 
   if (!chatId) return res.sendStatus(200)
 
@@ -62,12 +71,20 @@ router.post('/webhook/telegram', async (req, res) => {
     }
 
     if (text === '/start' || text?.startsWith('/start')) {
-      await sendTelegram(
-        chatId,
-        `☕ <b>Welcome to Joe's Brew!</b>\n\n` +
-        `Hi ${message.from?.first_name ?? 'there'}! You're all set to receive order updates.\n\n` +
-        `When your order is ready for pickup, we'll notify you right here. See you at the counter! 🙏`
-      )
+      // Telegram welcome message — retained but now also sends SMS if phone known
+      // No-op if Telegram bot token is no longer set
+      if (process.env.TELEGRAM_BOT_TOKEN) {
+        const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`
+        await fetch(tgUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id:    chatId,
+            text:       `Welcome to Joe's Brew! You'll now receive order updates via SMS.`,
+            parse_mode: 'HTML',
+          }),
+        })
+      }
     }
   } catch (error) {
     // Log error but don't fail the webhook response
@@ -79,6 +96,7 @@ router.post('/webhook/telegram', async (req, res) => {
 /**
  * POST /api/orders/verify
  * Admin endpoint to verify GCash payment and mark order as paid
+ * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/verify', validateAdmin, async (req, res) => {
   try {
@@ -106,18 +124,22 @@ router.post('/verify', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to verify order' })
     }
 
+    // Notify admin via SMS
+    // 🔔 TO CHANGE ADMIN NOTIFICATION: update process.env.ADMIN_PHONE_NUMBER in server/.env
     try {
-      await sendTelegram(
-        process.env.TELEGRAM_ADMIN_CHAT_ID,
-        `✅ <b>Payment Verified</b>\n\n` +
-        `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
-        `Telegram: ${order.telegram_username ? '@' + order.telegram_username : 'not provided'}\n` +
-        `GCash Ref: <code>${order.gcash_ref}</code>\n` +
-        `Amount: ₱${Number(order.total_amount).toFixed(2)}`
+      await sendSMS(
+        process.env.ADMIN_PHONE_NUMBER,
+        toPlainText(
+          `✅ Payment Verified\n\n` +
+          `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
+          `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
+          `GCash Ref: ${order.gcash_ref}\n` +
+          `Amount: PHP ${Number(order.total_amount).toFixed(2)}`
+        )
       )
-    } catch (tgErr) {
-      // Non-critical
+    } catch (smsErr) {
+      // Non-critical: order is still verified even if SMS fails
+      console.error('Admin SMS notify error (verify):', smsErr.message)
     }
 
     res.json({ success: true })
@@ -129,7 +151,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/reject
  * Admin endpoint to reject a suspicious or invalid payment
- * Notifies customer via Telegram with the rejection reason
+ * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/reject', validateAdmin, async (req, res) => {
   try {
@@ -153,7 +175,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
-        status: 'rejected',
+        status:           'rejected',
         rejection_reason: finalReason,
       })
       .eq('id', orderId)
@@ -162,34 +184,37 @@ router.post('/reject', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to reject order' })
     }
 
-    // Notify admin
+    // Notify admin via SMS
     try {
-      await sendTelegram(
-        process.env.TELEGRAM_ADMIN_CHAT_ID,
-        `❌ <b>Order Rejected</b>\n\n` +
-        `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
-        `Reason: ${finalReason}`
+      await sendSMS(
+        process.env.ADMIN_PHONE_NUMBER,
+        toPlainText(
+          `❌ Order Rejected\n\n` +
+          `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
+          `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
+          `Reason: ${finalReason}`
+        )
       )
-    } catch (tgErr) {
+    } catch (smsErr) {
       // Non-critical
+      console.error('Admin SMS notify error (reject):', smsErr.message)
     }
 
-    // Notify customer if they linked Telegram
-    if (order.telegram_username) {
-      const chatId = await getChatId(order.telegram_username)
-      if (chatId) {
-        try {
-          await sendTelegram(
-            chatId,
-            `⚠️ <b>Order Update</b>\n\n` +
-            `We're sorry, but your order <code>#${orderId.slice(0, 8).toUpperCase()}</code> could not be verified.\n\n` +
-            `<b>Reason:</b> ${finalReason}\n\n` +
-            `If you believe this is a mistake, please visit Joe's Brew with your proof of payment so we can assist you.`
+    // Notify customer via SMS if phone number is available
+    if (order.customer_phone) {
+      try {
+        await sendSMS(
+          order.customer_phone,
+          toPlainText(
+            `⚠️ Order Update\n\n` +
+            `We're sorry, but your Joe's Brew order #${orderId.slice(0, 8).toUpperCase()} could not be verified.\n\n` +
+            `Reason: ${finalReason}\n\n` +
+            `If you believe this is a mistake, please visit Joe's Brew with your proof of payment.`
           )
-        } catch (tgErr) {
-          // Non-critical — order still rejects even if Telegram fails
-        }
+        )
+      } catch (smsErr) {
+        // Non-critical — order still rejects even if customer SMS fails
+        console.error('Customer SMS notify error (reject):', smsErr.message)
       }
     }
 
@@ -202,6 +227,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/fulfill
  * Admin endpoint to mark order as ready for pickup and notify customer
+ * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/fulfill', validateAdmin, async (req, res) => {
   try {
@@ -229,31 +255,36 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to update order status' })
     }
 
+    // Notify admin via SMS
     try {
-      await sendTelegram(
-        process.env.TELEGRAM_ADMIN_CHAT_ID,
-        `☕ <b>Order Marked Ready</b>\n\n` +
-        `Order: <code>#${orderId.slice(0, 8).toUpperCase()}</code>\n` +
-        `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
-        `Amount: ₱${Number(order.total_amount).toFixed(2)}`
+      await sendSMS(
+        process.env.ADMIN_PHONE_NUMBER,
+        toPlainText(
+          `☕ Order Marked Ready\n\n` +
+          `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
+          `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
+          `Amount: PHP ${Number(order.total_amount).toFixed(2)}`
+        )
       )
-    } catch (tgErr) {
+    } catch (smsErr) {
       // Non-critical
+      console.error('Admin SMS notify error (fulfill):', smsErr.message)
     }
 
-    if (order.telegram_username) {
-      const chatId = await getChatId(order.telegram_username)
-      if (chatId) {
-        try {
-          await sendTelegram(
-            chatId,
-            `☕ <b>Your order is ready!</b>\n\n` +
-            `Order <code>#${orderId.slice(0, 8).toUpperCase()}</code> is ready for pickup.\n` +
-            `Please proceed to the counter. Thank you! 🙏`
+    // Notify customer via SMS if phone number is available
+    if (order.customer_phone) {
+      try {
+        await sendSMS(
+          order.customer_phone,
+          toPlainText(
+            `☕ Your Joe's Brew order is ready!\n\n` +
+            `Order #${orderId.slice(0, 8).toUpperCase()} is ready for pickup.\n` +
+            `Please proceed to the counter. Thank you!`
           )
-        } catch (tgErr) {
-          // Non-critical
-        }
+        )
+      } catch (smsErr) {
+        // Non-critical — order still fulfills even if customer SMS fails
+        console.error('Customer SMS notify error (fulfill):', smsErr.message)
       }
     }
 
@@ -266,6 +297,7 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
 /**
  * DELETE /api/orders/:orderId
  * Admin endpoint to permanently delete an order (cleanup old/test data)
+ * No notification needed — retained exactly as-is
  */
 router.delete('/:orderId', validateAdmin, async (req, res) => {
   try {
