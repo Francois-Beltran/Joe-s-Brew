@@ -192,38 +192,20 @@ export default function MenuSection() {
         ) : (
           <div>
             {sortedCategories.map(category => {
-              const categoryItems = grouped[category]
-              const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
-
-              function AddonRow({ items, categoryName }) {
-                return (
-                  <div className="mb-10">
-                    <h3 className="font-heading text-2xl text-brew-brown mb-2 px-4 md:px-0 tracking-wide">
-                      {categoryName.toUpperCase()}
-                    </h3>
-                    <p className="font-body text-xs text-brew-brown/50 mb-4 px-4 md:px-0">
-                      Tap to add to your order
-                    </p>
-                    {/* Mobile swipe */}
-                    <div
-                      className="flex md:hidden gap-3 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      {items.map(item => (
-                        <div key={item.id} className="snap-start">
-                          <AddonCard item={item} />
-                        </div>
-                      ))}
-                    </div>
-                    {/* Desktop wrap */}
-                    <div className="hidden md:flex flex-wrap gap-3">
-                      {items.map(item => (
-                        <AddonCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
-                )
+              const categoryItems = grouped[category];
+              
+              // 1. Handle Add-ons specifically
+              if (category === 'Add-ons') {
+                return <AddonRow key={category} items={categoryItems} categoryName={category} />;
               }
+              
+              // 2. Handle everything else
+              const isSwipeCategory = SWIPE_CATEGORIES.includes(category);
+              return isSwipeCategory ? (
+                <SwipeRow key={category} items={categoryItems} categoryName={category} />
+              ) : (
+                <GridSection key={category} items={categoryItems} categoryName={category} />
+              );
             })}
           </div>
         )}
