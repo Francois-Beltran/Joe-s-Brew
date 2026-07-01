@@ -18,7 +18,6 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [screenshot, setScreenshot] = useState(null)
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [telegramUsername, setTelegramUsername] = useState('')
   const [error, setError] = useState('')
   const [stage, setStage] = useState('instructions')
   const [result, setResult] = useState(null)
@@ -62,6 +61,12 @@ export default function GCashModal({ onClose, onSuccess }) {
       setError('GCash reference number must be exactly 13 digits.')
       return
     }
+
+    if (!customerPhone.match(/^09\d{9}$/)) {
+      setError('Enter a valid PH number starting with 09.')
+      return
+    }
+
     if (!screenshot) {
       setError('Please upload your GCash payment screenshot.')
       return
@@ -78,7 +83,7 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('customerName', customerName.trim())
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
-      formData.append('telegramUsername', telegramUsername)
+      formData.append('customerPhone', customerPhone)
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
@@ -181,32 +186,26 @@ export default function GCashModal({ onClose, onSuccess }) {
                 </p>
               </div>
 
-              {/* Telegram username */}
+              {/* Customer Phone */}
               <div>
                 <label className="font-body text-sm text-brew-brown/70 mb-1 block">
-                  Telegram username <span className="text-brew-brown/40 text-xs">(optional, for order updates)</span>
+                  Your phone number <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-body text-brew-brown/40">@</span>
-                  <input
-                    type="text"
-                    placeholder="yourusername"
-                    value={telegramUsername}
-                    onChange={e => setTelegramUsername(e.target.value.replace('@', '').replace(/\s/g, ''))}
-                    className="w-full border-2 border-brew-brown/30 rounded-xl pl-8 pr-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown"
-                  />
-                </div>
-
-                {/* 💡 FIXED: Wrapped attributes in an actual <a> tag */}
-                <a
-                  href={`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? 'your_bot'}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-body text-xs text-blue-600 hover:underline mt-2 block"
-                >
-                  👆 Start our bot first to receive notifications
-                </a>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="09XXXXXXXXX"
+                  maxLength={11}
+                  value={customerPhone}
+                  onChange={e => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
+                  className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown tracking-widest"
+                />
+                <p className="font-body text-xs text-brew-brown/40 mt-1">
+                  {customerPhone.length}/11 digits
+                  {customerPhone.length === 11 && <span className="text-green-600 ml-2">✓</span>}
+                </p>
               </div>
+
               {/* Screenshot upload */}
               <div>
                 <label className="font-body text-sm text-brew-brown/70 mb-2 block">
@@ -254,7 +253,7 @@ export default function GCashModal({ onClose, onSuccess }) {
 
               <button
                 onClick={handleSubmit}
-                disabled={loading || !screenshot || !customerName.trim() || refNumber.length !== 13}
+                disabled={loading || !screenshot || !customerName.trim() || refNumber.length !== 13 || customerPhone.length !== 11}
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >
                 {loading ? (

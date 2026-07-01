@@ -29,7 +29,7 @@ const upload = multer({
  * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, telegramUsername } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone } = req.body
   const screenshotFile = req.file
 
   try {
@@ -51,6 +51,10 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     if (!gcashRef?.match(/^\d{13}$/)) {
       return res.status(400).json({ error: 'GCash reference number must be exactly 13 digits' })
+    }
+
+    if (!customerPhone?.match(/^09\d{9}$/)) {
+      return res.status(400).json({ error: 'Invalid phone number format. Use 09XXXXXXXXX' })
     }
 
     if (!screenshotFile) {
@@ -144,7 +148,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         gcash_ref: gcashRef,
         gcash_screenshot_url: screenshotUrl,
         gcash_verified: false,
-        telegram_username: telegramUsername || null,
+        customer_phone: '+63' + customerPhone.slice(1),
       })
       .select()
       .single()

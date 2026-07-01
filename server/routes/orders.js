@@ -18,11 +18,11 @@ async function sendSMS(phoneNumber, message) {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'x-api-key':   process.env.SMS_API_KEY,
+      'x-api-key': process.env.SMS_API_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      number:  phoneNumber,
+      number: phoneNumber,
       message: message,
     }),
   })
@@ -57,9 +57,9 @@ router.post('/webhook/telegram', async (req, res) => {
   const message = req.body?.message
   if (!message) return res.sendStatus(200)
 
-  const chatId   = message.chat?.id?.toString()
+  const chatId = message.chat?.id?.toString()
   const username = message.from?.username?.toLowerCase()
-  const text     = message.text?.trim()
+  const text = message.text?.trim()
 
   if (!chatId) return res.sendStatus(200)
 
@@ -79,8 +79,8 @@ router.post('/webhook/telegram', async (req, res) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id:    chatId,
-            text:       `Welcome to Joe's Brew! You'll now receive order updates via SMS.`,
+            chat_id: chatId,
+            text: `Welcome to Joe's Brew! You'll now receive order updates via SMS.`,
             parse_mode: 'HTML',
           }),
         })
@@ -175,7 +175,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
-        status:           'rejected',
+        status: 'rejected',
         rejection_reason: finalReason,
       })
       .eq('id', orderId)
@@ -318,6 +318,28 @@ router.delete('/:orderId', validateAdmin, async (req, res) => {
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error', detail: error.message })
+  }
+})
+
+/**
+ * GET /api/orders/test-sms
+ * Temporary diagnostic route — remove after confirming SMS works
+ */
+router.get('/test-sms', async (req, res) => {
+  try {
+    console.log('SMS_GATEWAY_URL:', process.env.SMS_GATEWAY_URL)
+    console.log('SMS_API_KEY set:', !!process.env.SMS_API_KEY)
+    console.log('ADMIN_PHONE_NUMBER:', process.env.ADMIN_PHONE_NUMBER)
+
+    const result = await sendSMS(
+      process.env.ADMIN_PHONE_NUMBER,
+      "Test SMS from Joe's Brew. If you receive this, SMS gateway is working!"
+    )
+
+    res.json({ success: true, result })
+  } catch (error) {
+    console.error('Test SMS error:', error.message)
+    res.status(500).json({ error: error.message })
   }
 })
 
