@@ -193,12 +193,12 @@ export default function MenuSection() {
           <div>
             {sortedCategories.map(category => {
               const categoryItems = grouped[category];
-              
+
               // 1. Handle Add-ons specifically
               if (category === 'Add-ons') {
                 return <AddonRow key={category} items={categoryItems} categoryName={category} />;
               }
-              
+
               // 2. Handle everything else
               const isSwipeCategory = SWIPE_CATEGORIES.includes(category);
               return isSwipeCategory ? (
