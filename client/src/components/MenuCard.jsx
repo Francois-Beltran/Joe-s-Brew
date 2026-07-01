@@ -20,8 +20,6 @@ export default function MenuCard({ item }) {
   const hasGrande = item.price_grande != null
 
   // Default to base size
-  const [selectedSize, setSelectedSize] = useState('base')
-
   const hasGrande = item.price_grande != null
   const hasKing = item.price_king != null
   const [selectedSize, setSelectedSize] = useState('base')
@@ -35,14 +33,6 @@ export default function MenuCard({ item }) {
     selectedSize === 'king' ? (item.size_label_king || 'King') :
       selectedSize === 'grande' ? (item.size_label_grande || 'Grande') :
         (item.size_label_base || 'Medio')
-
-  const displayPrice = selectedSize === 'grande' && hasGrande
-    ? item.price_grande
-    : item.price
-
-  const sizeLabel = selectedSize === 'grande'
-    ? (item.size_label_grande || 'Grande')
-    : (item.size_label_base || 'Medio')
 
   const inCart = cart.find(i =>
     i.menuItemId === item.id && i.size === selectedSize
