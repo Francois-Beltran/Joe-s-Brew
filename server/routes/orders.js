@@ -22,7 +22,7 @@ async function sendSMS(phoneNumber, message) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      number: phoneNumber,
+      phoneNumber: phoneNumber,
       message: message,
     }),
   })
