@@ -16,10 +16,9 @@ function StarRating({ rating }) {
 }
 
 export default function MenuCard({ item }) {
-  const { addItem, cart } = useCart()
-  const hasGrande = item.price_grande != null
 
-  // Default to base size
+  const { addItem, cart } = useCart()
+    // Default to base size
   const hasGrande = item.price_grande != null
   const hasKing = item.price_king != null
   const [selectedSize, setSelectedSize] = useState('base')
