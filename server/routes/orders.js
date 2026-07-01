@@ -7,35 +7,39 @@ router.use(express.json())
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATION HELPER
-// Previously: Telegram Bot API (api.telegram.org)
-// Now: Android SMS Gateway (process.env.SMS_GATEWAY_URL)
-//
+// SMS Gateway: sms-gate.app (Android app)
 // TO CHANGE SMS GATEWAY: update SMS_GATEWAY_URL and SMS_API_KEY in server/.env
+// SMS_API_KEY format: "username:password" (from the sms-gate.app Android app)
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendSMS(phoneNumber, message) {
   const url = process.env.SMS_GATEWAY_URL
 
+  // sms-gate.app uses HTTP Basic Auth with username:password
+  const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'X-API-Key': process.env.SMS_API_KEY,
-      'Content-Type': 'application/json',
+      'Authorization': `Basic ${basicAuth}`,
+      'Content-Type':  'application/json',
     },
     body: JSON.stringify({
-      phoneNumber: phoneNumber,
-      message: message,
+      phoneNumbers: [phoneNumber],
+      message:      message,
     }),
   })
 
-  const data = await res.json()
+  // sms-gate.app returns 202 Accepted on success — read as text first to avoid
+  // JSON parse errors on empty bodies
+  const rawText = await res.text()
   if (!res.ok) {
-    throw new Error(`SMS Gateway error: ${JSON.stringify(data)}`)
+    throw new Error(`SMS Gateway error: ${rawText}`)
   }
-  return data
+  return rawText ? JSON.parse(rawText) : { status: res.status }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Strips Telegram-specific HTML tags (e.g. <b>, <code>) to plain text for SMS
+// Strips HTML tags from Telegram-style messages to plain text for SMS
 // ─────────────────────────────────────────────────────────────────────────────
 function toPlainText(str) {
   return str
@@ -57,9 +61,9 @@ router.post('/webhook/telegram', async (req, res) => {
   const message = req.body?.message
   if (!message) return res.sendStatus(200)
 
-  const chatId = message.chat?.id?.toString()
+  const chatId   = message.chat?.id?.toString()
   const username = message.from?.username?.toLowerCase()
-  const text = message.text?.trim()
+  const text     = message.text?.trim()
 
   if (!chatId) return res.sendStatus(200)
 
@@ -71,16 +75,14 @@ router.post('/webhook/telegram', async (req, res) => {
     }
 
     if (text === '/start' || text?.startsWith('/start')) {
-      // Telegram welcome message — retained but now also sends SMS if phone known
-      // No-op if Telegram bot token is no longer set
       if (process.env.TELEGRAM_BOT_TOKEN) {
         const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`
         await fetch(tgUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: chatId,
-            text: `Welcome to Joe's Brew! You'll now receive order updates via SMS.`,
+            chat_id:    chatId,
+            text:       `Welcome to Joe's Brew! You'll now receive order updates via SMS.`,
             parse_mode: 'HTML',
           }),
         })
@@ -96,7 +98,6 @@ router.post('/webhook/telegram', async (req, res) => {
 /**
  * POST /api/orders/verify
  * Admin endpoint to verify GCash payment and mark order as paid
- * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/verify', validateAdmin, async (req, res) => {
   try {
@@ -124,8 +125,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to verify order' })
     }
 
-    // Notify admin via SMS
-    // 🔔 TO CHANGE ADMIN NOTIFICATION: update process.env.ADMIN_PHONE_NUMBER in server/.env
+    // 🔔 TO CHANGE ADMIN NOTIFICATION: update ADMIN_PHONE_NUMBER in server/.env
     try {
       await sendSMS(
         process.env.ADMIN_PHONE_NUMBER,
@@ -151,7 +151,6 @@ router.post('/verify', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/reject
  * Admin endpoint to reject a suspicious or invalid payment
- * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/reject', validateAdmin, async (req, res) => {
   try {
@@ -175,7 +174,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
-        status: 'rejected',
+        status:           'rejected',
         rejection_reason: finalReason,
       })
       .eq('id', orderId)
@@ -227,7 +226,6 @@ router.post('/reject', validateAdmin, async (req, res) => {
 /**
  * POST /api/orders/fulfill
  * Admin endpoint to mark order as ready for pickup and notify customer
- * Notification: previously Telegram → now SMS Gateway
  */
 router.post('/fulfill', validateAdmin, async (req, res) => {
   try {
@@ -297,7 +295,6 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
 /**
  * DELETE /api/orders/:orderId
  * Admin endpoint to permanently delete an order (cleanup old/test data)
- * No notification needed — retained exactly as-is
  */
 router.delete('/:orderId', validateAdmin, async (req, res) => {
   try {
@@ -318,46 +315,6 @@ router.delete('/:orderId', validateAdmin, async (req, res) => {
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error', detail: error.message })
-  }
-})
-
-/**
- * GET /api/orders/test-sms
- * Temporary diagnostic route — remove after confirming SMS works
- */
-router.get('/test-sms', async (req, res) => {
-  try {
-    console.log('SMS_GATEWAY_URL:', process.env.SMS_GATEWAY_URL)
-    console.log('SMS_API_KEY set:', !!process.env.SMS_API_KEY)
-    console.log('ADMIN_PHONE_NUMBER:', process.env.ADMIN_PHONE_NUMBER)
-
-    const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
-
-    const smsRes = await fetch(process.env.SMS_GATEWAY_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${basicAuth}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        phoneNumbers: [process.env.ADMIN_PHONE_NUMBER],
-        message:      "Test SMS from Joe's Brew!",
-      }),
-    })
-
-    // Read raw text first before trying to parse JSON
-    const rawText = await smsRes.text()
-    console.log('SMS response status:', smsRes.status)
-    console.log('SMS response body:', rawText)
-
-    res.json({
-      status: smsRes.status,
-      body:   rawText,
-    })
-
-  } catch (error) {
-    console.error('Test SMS error:', error.message)
-    res.status(500).json({ error: error.message })
   }
 })
 
