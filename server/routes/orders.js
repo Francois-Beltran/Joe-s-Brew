@@ -18,9 +18,9 @@ async function sendSMS(phoneNumber, message) {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'x-api-key': process.env.SMS_API_KEY,
-      'Content-Type': 'application/json',
-    },
+  'X-API-Key':    process.env.SMS_API_KEY,
+  'Content-Type': 'application/json',
+},
     body: JSON.stringify({
       phoneNumber: phoneNumber,
       message: message,
