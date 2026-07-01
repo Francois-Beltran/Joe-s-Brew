@@ -1,39 +1,26 @@
 import { useState, useRef } from 'react'
 import { useCart } from '../hooks/useCart'
 import { API_URL } from '../lib/api'
-/**
- * GCash payment modal component
- * Handles GCash payment flow with QR code display, reference number input,
- * screenshot upload, and order submission
- * 
- * @param {Object} props - Component props
- * @param {Function} props.onClose - Callback when modal is closed
- * @param {Function} props.onSuccess - Callback when payment is successful
- * @returns {JSX.Element} GCash payment modal UI
- */
+
 export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
-  const [customerName, setCustomerName] = useState('')
-  const [refNumber, setRefNumber] = useState('')
-  const [screenshot, setScreenshot] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [stage, setStage] = useState('instructions')
-  const [result, setResult] = useState(null)
+  const [customerName, setCustomerName]   = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [refNumber, setRefNumber]         = useState('')
+  const [screenshot, setScreenshot]       = useState(null)
+  const [preview, setPreview]             = useState(null)
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState('')
+  const [stage, setStage]                 = useState('instructions')
+  const [result, setResult]               = useState(null)
   const fileInputRef = useRef(null)
 
+  // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09XXXXXXXXX'
-  const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'Joe Dela Cruz'
+  const GCASH_NAME   = import.meta.env.VITE_GCASH_NAME   || 'Joe Dela Cruz'
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
-  /**
-   * Handles file input change for screenshot upload
-   * Validates file type and creates preview
-   * 
-   * @param {Event} e - File input change event
-   */
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -46,27 +33,19 @@ export default function GCashModal({ onClose, onSuccess }) {
     setError('')
   }
 
-  /**
-   * Handles form submission for GCash payment
-   * Validates inputs and submits order to backend
-   */
   const handleSubmit = async () => {
-    // Validate customer name
-    if (!customerName.trim()) {
-      setError('Please enter your name.')
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      setError('Please enter your full name.')
       return
     }
-    // Validate ref number — GCash ref is 13 digits
-    if (!refNumber.match(/^\d{13}$/)) {
-      setError('GCash reference number must be exactly 13 digits.')
-      return
-    }
-
     if (!customerPhone.match(/^09\d{9}$/)) {
       setError('Enter a valid PH number starting with 09.')
       return
     }
-
+    if (!refNumber.match(/^\d{13}$/)) {
+      setError('GCash reference number must be exactly 13 digits.')
+      return
+    }
     if (!screenshot) {
       setError('Please upload your GCash payment screenshot.')
       return
@@ -80,12 +59,12 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('items', JSON.stringify(
         cart.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity }))
       ))
-      formData.append('customerName', customerName.trim())
-      formData.append('gcashRef', refNumber)
-      formData.append('screenshot', screenshot)
+      formData.append('customerName',  customerName.trim())
       formData.append('customerPhone', customerPhone)
+      formData.append('gcashRef',      refNumber)
+      formData.append('screenshot',    screenshot)
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout`, { method: 'POST', body: formData })
+      const res  = await fetch(`${API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {
@@ -125,10 +104,12 @@ export default function GCashModal({ onClose, onSuccess }) {
             <>
               {/* GCash QR */}
               <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-dashed border-brew-brown/30">
-                {/* Your Real QR Image */}
-                <img src="/images/gcash-qr.png" className="w-48 h-48 rounded-xl mb-3" alt="GCash QR Code" />
-
-                {/* Account Info Details */}
+                {/* 🖼️ TO CHANGE QR: replace file at client/public/images/gcash-qr.png */}
+                <img
+                  src="/images/gcash-qr.png"
+                  alt="GCash QR Code"
+                  className="w-48 h-48 rounded-xl object-contain mb-3"
+                />
                 <p className="font-heading text-brew-brown text-lg tracking-wide">{GCASH_NUMBER}</p>
                 <p className="font-body text-brew-brown/60 text-sm">{GCASH_NAME}</p>
               </div>
@@ -139,7 +120,7 @@ export default function GCashModal({ onClose, onSuccess }) {
                   `Open GCash and send exactly ₱${displayTotal.toFixed(2)} to ${GCASH_NUMBER}`,
                   'Wait for the GCash payment confirmation screen',
                   'Copy your 13-digit reference number from the confirmation',
-                  'Take a screenshot and fill in the form below',
+                  'Fill in the form below and upload your screenshot',
                 ].map((step, i) => (
                   <li key={i} className="flex items-start gap-3 font-body text-sm text-brew-brown/80">
                     <span className="w-6 h-6 rounded-full bg-brew-brown text-brew-beige flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
@@ -166,26 +147,6 @@ export default function GCashModal({ onClose, onSuccess }) {
                 />
               </div>
 
-              {/* Reference number */}
-              <div>
-                <label className="font-body text-sm text-brew-brown/70 mb-1 block">
-                  GCash reference number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="1234567890123"
-                  maxLength={13}
-                  value={refNumber}
-                  onChange={e => setRefNumber(e.target.value.replace(/\D/g, ''))}
-                  className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown tracking-widest font-heading text-lg"
-                />
-                <p className="font-body text-xs text-brew-brown/40 mt-1">
-                  {refNumber.length}/13 digits
-                  {refNumber.length === 13 && <span className="text-green-600 ml-2">✓</span>}
-                </p>
-              </div>
-
               {/* Customer Phone */}
               <div>
                 <label className="font-body text-sm text-brew-brown/70 mb-1 block">
@@ -206,7 +167,27 @@ export default function GCashModal({ onClose, onSuccess }) {
                 </p>
               </div>
 
-              {/* Screenshot upload */}
+              {/* GCash Reference Number */}
+              <div>
+                <label className="font-body text-sm text-brew-brown/70 mb-1 block">
+                  GCash reference number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="1234567890123"
+                  maxLength={13}
+                  value={refNumber}
+                  onChange={e => setRefNumber(e.target.value.replace(/\D/g, ''))}
+                  className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown tracking-widest font-heading text-lg"
+                />
+                <p className="font-body text-xs text-brew-brown/40 mt-1">
+                  {refNumber.length}/13 digits
+                  {refNumber.length === 13 && <span className="text-green-600 ml-2">✓</span>}
+                </p>
+              </div>
+
+              {/* Screenshot Upload */}
               <div>
                 <label className="font-body text-sm text-brew-brown/70 mb-2 block">
                   Payment screenshot <span className="text-red-500">*</span>
@@ -253,7 +234,13 @@ export default function GCashModal({ onClose, onSuccess }) {
 
               <button
                 onClick={handleSubmit}
-                disabled={loading || !screenshot || !customerName.trim() || refNumber.length !== 13 || customerPhone.length !== 11}
+                disabled={
+                  loading ||
+                  !screenshot ||
+                  customerName.trim().length < 2 ||
+                  customerPhone.length !== 11 ||
+                  refNumber.length !== 13
+                }
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >
                 {loading ? (
@@ -296,7 +283,7 @@ export default function GCashModal({ onClose, onSuccess }) {
               </div>
 
               <p className="font-body text-brew-brown/60 text-sm">
-                Our staff will verify your payment shortly. You'll receive an SMS when your order is ready for pickup.
+                Our staff will verify your payment shortly. You'll receive an SMS on <strong>{customerPhone}</strong> when your order is ready for pickup.
               </p>
 
               <button
