@@ -169,20 +169,20 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     // Insert order items
     const { error: itemsError } = await supabaseAdmin.from('order_items').insert(
-  items.map(i => ({
-    order_id: order.id,
-    menu_item_id: i.menuItemId,
-    quantity: i.quantity,
-    unit_price:
-      i.size === 'king'   ? priceMap[i.menuItemId].king   :
-      i.size === 'grande' ? priceMap[i.menuItemId].grande :
-                            priceMap[i.menuItemId].base,
-  }))
-)
+      items.map(i => ({
+        order_id: order.id,
+        menu_item_id: i.menuItemId,
+        quantity: i.quantity,
+        unit_price:
+          i.size === 'king' ? priceMap[i.menuItemId].king :
+            i.size === 'grande' ? priceMap[i.menuItemId].grande :
+              priceMap[i.menuItemId].base,
+      }))
+    )
 
-if (itemsError) {
-  return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
-}
+    if (itemsError) {
+      return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
+    }
 
     res.json({
       success: true,
