@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function AdminGuard({ children }) {
+export default function EmployeeGuard({ children }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,12 +32,12 @@ export default function AdminGuard({ children }) {
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm"
         >
-          <h1 className="font-heading text-3xl text-brew-brown mb-2">ADMIN ACCESS</h1>
+          <h1 className="font-heading text-3xl text-brew-brown mb-2">EMPLOYEE ACCESS</h1>
           <p className="font-body text-brew-brown/60 text-sm mb-6">Joe's Brew Dashboard</p>
 
           <input
             type="password"
-            placeholder="Enter admin password"
+            placeholder="Enter employee password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoFocus
