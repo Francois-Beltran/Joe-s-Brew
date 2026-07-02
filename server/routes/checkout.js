@@ -29,7 +29,7 @@ const upload = multer({
  * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, deliveryAddress } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark } = req.body
   const screenshotFile = req.file
 
   try {
@@ -60,8 +60,8 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     if (!['pickup', 'delivery'].includes(orderType)) {
       return res.status(400).json({ error: 'Invalid order type' })
     }
-    if (orderType === 'delivery' && !deliveryAddress?.trim()) {
-      return res.status(400).json({ error: 'Delivery address is required' })
+    if (orderType === 'delivery' && !sitio?.trim()) {
+      return res.status(400).json({ error: 'Sitio is required for delivery orders' })
     }
 
     if (!screenshotFile) {
@@ -115,8 +115,21 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return sum + unitPrice * i.quantity
     }, 0)
 
-    // Delivery fee is server-authoritative — never trust a client-supplied fee
-    const deliveryFee = orderType === 'delivery' ? Number(process.env.DELIVERY_FEE || 0) : 0
+    // Delivery fee is server-authoritative — looked up from delivery_zones table, never trusted from client
+    let deliveryFee = 0
+    if (orderType === 'delivery') {
+      const { data: zone } = await supabaseAdmin
+        .from('delivery_zones')
+        .select('fee')
+        .eq('sitio_name', sitio)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (!zone) {
+        return res.status(400).json({ error: 'Invalid or unavailable delivery Sitio' })
+      }
+      deliveryFee = Number(zone.fee)
+    }
     const totalAmount = itemsTotal + deliveryFee
 
     // Check for duplicate reference number to prevent fraud
@@ -172,7 +185,9 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         customer_phone: '+63' + customerPhone.slice(1),
         order_type: orderType,
         delivery_fee: deliveryFee,
-        delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
+        delivery_address: orderType === 'delivery'
+          ? `Sitio: ${sitio.trim()}${landmark?.trim() ? ' | Landmark: ' + landmark.trim() : ''}`
+          : null,
       })
       .select()
       .single()

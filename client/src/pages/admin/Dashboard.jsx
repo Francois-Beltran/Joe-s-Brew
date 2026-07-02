@@ -103,19 +103,22 @@ export default function Dashboard() {
     }
   }
 
-  const deleteOrder = async (order) => {
-    if (!confirm(`Permanently delete order #${order.id.slice(0, 8).toUpperCase()}? This cannot be undone.`)) {
-      return
-    }
+const deleteOrder = async (order) => {
+  const confirmPassword = prompt(
+    `To permanently delete order #${order.id.slice(0, 8).toUpperCase()}, please re-enter the admin password:`
+  )
+  if (confirmPassword === null) return
 
-    setActionError('')
-    try {
-      const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-        },
-      })
+  setActionError('')
+  try {
+    const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
+      },
+      body: JSON.stringify({ confirmPassword }),
+    })
 
       const data = await res.json().catch(() => null)
 

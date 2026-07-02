@@ -4,6 +4,7 @@ import { API_URL } from '../../lib/api'
 
 export default function EmployeeDashboard() {
     const [orders, setOrders] = useState([])
+    const [activeTab, setActiveTab] = useState('pending')
     const [menuItems, setMenuItems] = useState([])
     const [loading, setLoading] = useState(true)
     const [fulfilling, setFulfilling] = useState(null)
@@ -13,7 +14,7 @@ export default function EmployeeDashboard() {
         const { data } = await supabase
             .from('orders')
             .select('*, order_items(quantity, unit_price, menu_items(name))')
-            .eq('status', 'paid')
+            .in('status', ['paid', 'ready'])
             .order('created_at', { ascending: true })
         setOrders(data ?? [])
         setLoading(false)
@@ -95,6 +96,12 @@ export default function EmployeeDashboard() {
         return ai - bi
     })
 
+    const filteredOrders = orders.filter(o => {
+        if (activeTab === 'pending')   return o.status === 'paid'
+        if (activeTab === 'completed') return o.status === 'ready'
+        return true
+    })
+
     return (
         <div className="min-h-screen bg-brew-beige p-6">
             <div className="max-w-6xl mx-auto">
@@ -114,19 +121,36 @@ export default function EmployeeDashboard() {
 
                     {/* Orders to fulfill */}
                     <div>
-                        <h2 className="font-heading text-2xl text-brew-brown mb-4">
-                            READY TO PREPARE ({orders.length})
-                        </h2>
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
+                            <h2 className="font-heading text-2xl text-brew-brown">ORDERS</h2>
+                            {['pending', 'completed', 'all'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${
+                                        activeTab === tab
+                                            ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                                            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                                    }`}
+                                >
+                                    {tab.toUpperCase()}
+                                    {tab === 'pending' && (
+                                        <span className="ml-1">({orders.filter(o => o.status === 'paid').length})</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
                         {loading ? (
                             <p className="font-body text-brew-brown/50">Loading...</p>
-                        ) : orders.length === 0 ? (
+                        ) : filteredOrders.length === 0 ? (
                             <div className="bg-brew-light rounded-2xl p-8 text-center">
                                 <p className="text-4xl mb-3">☕</p>
-                                <p className="font-body text-brew-brown/50">No orders waiting.</p>
+                                <p className="font-body text-brew-brown/50">No orders in this view.</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {orders.map(order => (
+                                {filteredOrders.map(order => (
                                     <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
                                         <div className="flex items-start justify-between mb-2">
                                             <div>
@@ -136,8 +160,9 @@ export default function EmployeeDashboard() {
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_name}</p>
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
                                             </div>
-                                            <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                                                }`}>
+                                            <span className={`font-body text-xs px-2 py-0.5 rounded-full ${
+                                                order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                            }`}>
                                                 {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
                                             </span>
                                         </div>
@@ -157,13 +182,19 @@ export default function EmployeeDashboard() {
                                             ))}
                                         </ul>
 
-                                        <button
-                                            onClick={() => markReady(order)}
-                                            disabled={fulfilling === order.id}
-                                            className="w-full bg-brew-brown text-brew-beige font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-brew-dark disabled:opacity-50"
-                                        >
-                                            {fulfilling === order.id ? 'NOTIFYING...' : '☕ READY & NOTIFY CUSTOMER'}
-                                        </button>
+                                        {order.status === 'paid' ? (
+                                            <button
+                                                onClick={() => markReady(order)}
+                                                disabled={fulfilling === order.id}
+                                                className="w-full bg-brew-brown text-brew-beige font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-brew-dark disabled:opacity-50"
+                                            >
+                                                {fulfilling === order.id ? 'NOTIFYING...' : '☕ READY & NOTIFY CUSTOMER'}
+                                            </button>
+                                        ) : (
+                                            <p className="text-center font-body text-xs text-purple-700 py-2">
+                                                ✓ Completed
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -180,18 +211,20 @@ export default function EmployeeDashboard() {
                                 </div>
                                 <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
                                     {grouped[cat].map((item, idx) => (
-                                        <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
-                                            }`}>
+                                        <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${
+                                            idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
+                                        }`}>
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 {item.best_seller && <span className="text-amber-400 text-xs shrink-0">⭐</span>}
                                                 <p className="font-body font-medium text-brew-brown text-sm truncate">{item.name}</p>
                                             </div>
                                             <button
                                                 onClick={() => toggleAvailability(item)}
-                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${item.is_available
+                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${
+                                                    item.is_available
                                                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
                                                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
-                                                    }`}
+                                                }`}
                                             >
                                                 {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
                                             </button>

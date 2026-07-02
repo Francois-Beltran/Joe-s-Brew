@@ -1,13 +1,18 @@
 import { useState, useRef } from 'react'
 import { useCart } from '../hooks/useCart'
 import { API_URL } from '../lib/api'
+import { useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderType, setOrderType] = useState('pickup')
-  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [sitio, setSitio] = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [deliveryZones, setDeliveryZones] = useState([])
+  const [selectedFee, setSelectedFee] = useState(0)
   const [refNumber, setRefNumber] = useState('')
   const [screenshot, setScreenshot] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -20,10 +25,8 @@ export default function GCashModal({ onClose, onSuccess }) {
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09XXXXXXXXX'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'Joe Dela Cruz'
-  const DELIVERY_FEE = Number(import.meta.env.VITE_DELIVERY_FEE || 49)
-  
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
-  const grandTotal = displayTotal + (orderType === 'delivery' ? DELIVERY_FEE : 0)
+  const grandTotal = displayTotal + (orderType === 'delivery' ? selectedFee : 0)
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
@@ -46,8 +49,8 @@ export default function GCashModal({ onClose, onSuccess }) {
       setError('Enter a valid PH number starting with 09.')
       return
     }
-    if (orderType === 'delivery' && !deliveryAddress.trim()) {
-      setError('Please enter your delivery address.')
+    if (orderType === 'delivery' && !sitio.trim()) {
+      setError('Please select your Sitio.')
       return
     }
     if (!refNumber.match(/^\d{13}$/)) {
@@ -70,7 +73,8 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('customerName', customerName.trim())
       formData.append('customerPhone', customerPhone)
       formData.append('orderType', orderType)
-      formData.append('deliveryAddress', deliveryAddress.trim())
+      formData.append('sitio', sitio)
+      formData.append('landmark', landmark.trim())
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
 
@@ -92,6 +96,23 @@ export default function GCashModal({ onClose, onSuccess }) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    async function fetchZones() {
+      const { data } = await supabase
+        .from('delivery_zones')
+        .select('sitio_name, fee')
+        .eq('is_active', true)
+        .order('sitio_name')
+      setDeliveryZones(data ?? [])
+    }
+    fetchZones()
+  }, [])
+
+  useEffect(() => {
+    const zone = deliveryZones.find(z => z.sitio_name === sitio)
+    setSelectedFee(zone ? Number(zone.fee) : 0)
+  }, [sitio, deliveryZones])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -165,24 +186,44 @@ export default function GCashModal({ onClose, onSuccess }) {
                       : 'text-brew-brown border-brew-brown/30'
                       }`}
                   >
-                    🛵 Delivery (+₱{DELIVERY_FEE})
+                    🛵 Delivery
                   </button>
                 </div>
               </div>
 
               {orderType === 'delivery' && (
-                <div>
-                  <label className="font-body text-sm text-brew-brown/70 mb-1 block">
-                    Delivery Address <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={deliveryAddress}
-                    onChange={e => setDeliveryAddress(e.target.value)}
-                    rows={2}
-                    placeholder="House/Unit No., Street, Barangay, City"
-                    className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown resize-none"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="font-body text-sm text-brew-brown/70 mb-1 block">
+                      Sitio <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={sitio}
+                      onChange={e => setSitio(e.target.value)}
+                      className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent focus:outline-none focus:border-brew-brown"
+                    >
+                      <option value="">Select your Sitio</option>
+                      {deliveryZones.map(zone => (
+                        <option key={zone.sitio_name} value={zone.sitio_name}>
+                          {zone.sitio_name} (+₱{Number(zone.fee).toFixed(0)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-body text-sm text-brew-brown/70 mb-1 block">
+                      Landmark <span className="text-brew-brown/40 text-xs">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={landmark}
+                      onChange={e => setLandmark(e.target.value)}
+                      placeholder="e.g. Near the chapel, beside the sari-sari store"
+                      className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown"
+                    />
+                  </div>
+                </>
               )}
 
               {/* Customer Name */}
@@ -289,7 +330,7 @@ export default function GCashModal({ onClose, onSuccess }) {
                 disabled={
                   loading || !screenshot || customerName.trim().length < 2 ||
                   customerPhone.length !== 11 || refNumber.length !== 13 ||
-                  (orderType === 'delivery' && !deliveryAddress.trim())
+                  (orderType === 'delivery' && !sitio.trim())
                 }
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >

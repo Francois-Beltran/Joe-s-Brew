@@ -318,8 +318,15 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
 router.delete('/:orderId', validateAdmin, async (req, res) => {
   try {
     const { orderId } = req.params
+    const { confirmPassword } = req.body
+
     if (!orderId) {
       return res.status(400).json({ error: 'orderId required' })
+    }
+
+    // Extra security layer — re-confirm admin password before permanent deletion
+    if (confirmPassword !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Incorrect password. Deletion cancelled.' })
     }
 
     // Delete order items first (foreign key dependency)
