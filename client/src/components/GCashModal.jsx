@@ -143,7 +143,7 @@ export default function GCashModal({ onClose, onSuccess }) {
               <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-dashed border-brew-brown/30">
                 {/* 🖼️ TO CHANGE QR: replace file at client/public/images/gcash-qr.png */}
                 <img
-                  src="/images/gcash-qr.png"
+                  src="/images/gcash-qr.jpg"
                   alt="GCash QR Code"
                   className="w-48 h-48 rounded-xl object-contain mb-3"
                 />
