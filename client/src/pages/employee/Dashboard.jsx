@@ -3,207 +3,207 @@ import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 
 export default function EmployeeDashboard() {
-  const [orders, setOrders]         = useState([])
-  const [menuItems, setMenuItems]   = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [fulfilling, setFulfilling] = useState(null)
-  const [actionError, setActionError] = useState('')
+    const [orders, setOrders] = useState([])
+    const [menuItems, setMenuItems] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [fulfilling, setFulfilling] = useState(null)
+    const [actionError, setActionError] = useState('')
 
-  const fetchOrders = async () => {
-    const { data } = await supabase
-      .from('orders')
-      .select('*, order_items(quantity, unit_price, menu_items(name))')
-      .eq('status', 'paid')
-      .order('created_at', { ascending: true })
-    setOrders(data ?? [])
-    setLoading(false)
-  }
-
-  const fetchMenu = async () => {
-    const { data } = await supabase
-      .from('menu_items')
-      .select('id, name, price, price_grande, price_king, is_available, category, best_seller')
-      .order('category')
-    setMenuItems(data ?? [])
-  }
-
-  useEffect(() => {
-    fetchOrders()
-    fetchMenu()
-    const channel = supabase
-      .channel('employee-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [])
-
-  const markReady = async (order) => {
-    setFulfilling(order.id)
-    setActionError('')
-    try {
-      const res = await fetch(`${API_URL}/api/orders/fulfill`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET },
-        body: JSON.stringify({ orderId: order.id }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        setActionError(data?.error || `Failed (status ${res.status})`)
-        return
-      }
-      fetchOrders()
-    } catch (error) {
-      setActionError('Network error: ' + error.message)
-    } finally {
-      setFulfilling(null)
+    const fetchOrders = async () => {
+        const { data } = await supabase
+            .from('orders')
+            .select('*, order_items(quantity, unit_price, menu_items(name))')
+            .eq('status', 'paid')
+            .order('created_at', { ascending: true })
+        setOrders(data ?? [])
+        setLoading(false)
     }
-  }
 
-  const toggleAvailability = async (item) => {
-    const { error } = await supabase
-      .from('menu_items')
-      .update({ is_available: !item.is_available })
-      .eq('id', item.id)
-    if (error) {
-      setActionError('Failed to update: ' + error.message)
-      return
+    const fetchMenu = async () => {
+        const { data } = await supabase
+            .from('menu_items')
+            .select('id, name, price, price_grande, price_king, is_available, category, best_seller')
+            .order('category')
+        setMenuItems(data ?? [])
     }
-    setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: !m.is_available } : m))
-  }
 
-  const CATEGORY_ORDER = [
-    'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe', 'Milk Tea',
-    'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
-    'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
-  ]
+    useEffect(() => {
+        fetchOrders()
+        fetchMenu()
+        const channel = supabase
+            .channel('employee-orders')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+            .subscribe()
+        return () => supabase.removeChannel(channel)
+    }, [])
 
-  const grouped = menuItems.reduce((acc, item) => {
-    const cat = item.category || 'Other'
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(item)
-    return acc
-  }, {})
+    const markReady = async (order) => {
+        setFulfilling(order.id)
+        setActionError('')
+        try {
+            const res = await fetch(`${API_URL}/api/orders/fulfill`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-Token': sessionStorage.getItem('joesbrew_employee_token'),
+                },
+                body: JSON.stringify({ orderId: order.id }),
+            })
+            const data = await res.json().catch(() => null)
+            if (!res.ok) {
+                setActionError(data?.error || `Failed (status ${res.status})`)
+                return
+            }
+            fetchOrders()
+        } catch (error) {
+            setActionError('Network error: ' + error.message)
+        } finally {
+            setFulfilling(null)
+        }
+    }
 
-  const sortedCats = Object.keys(grouped).sort((a, b) => {
-    const ai = CATEGORY_ORDER.indexOf(a), bi = CATEGORY_ORDER.indexOf(b)
-    if (ai === -1 && bi === -1) return a.localeCompare(b)
-    if (ai === -1) return 1
-    if (bi === -1) return -1
-    return ai - bi
-  })
+    const toggleAvailability = async (item) => {
+        const { error } = await supabase
+            .from('menu_items')
+            .update({ is_available: !item.is_available })
+            .eq('id', item.id)
+        if (error) {
+            setActionError('Failed to update: ' + error.message)
+            return
+        }
+        setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: !m.is_available } : m))
+    }
 
-  return (
-    <div className="min-h-screen bg-brew-beige p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
-          <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Employee fulfillment</p>
-        </div>
+    const CATEGORY_ORDER = [
+        'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe', 'Milk Tea',
+        'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
+        'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+    ]
 
-        {actionError && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex justify-between">
-            <p className="font-body text-sm text-red-700">{actionError}</p>
-            <button onClick={() => setActionError('')} className="text-red-400 text-sm">✕</button>
-          </div>
-        )}
+    const grouped = menuItems.reduce((acc, item) => {
+        const cat = item.category || 'Other'
+        if (!acc[cat]) acc[cat] = []
+        acc[cat].push(item)
+        return acc
+    }, {})
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    const sortedCats = Object.keys(grouped).sort((a, b) => {
+        const ai = CATEGORY_ORDER.indexOf(a), bi = CATEGORY_ORDER.indexOf(b)
+        if (ai === -1 && bi === -1) return a.localeCompare(b)
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+    })
 
-          {/* Orders to fulfill */}
-          <div>
-            <h2 className="font-heading text-2xl text-brew-brown mb-4">
-              READY TO PREPARE ({orders.length})
-            </h2>
-            {loading ? (
-              <p className="font-body text-brew-brown/50">Loading...</p>
-            ) : orders.length === 0 ? (
-              <div className="bg-brew-light rounded-2xl p-8 text-center">
-                <p className="text-4xl mb-3">☕</p>
-                <p className="font-body text-brew-brown/50">No orders waiting.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {orders.map(order => (
-                  <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-heading text-brew-brown text-lg">
-                          #{order.id.slice(0, 8).toUpperCase()}
-                        </p>
-                        <p className="font-body text-xs text-brew-brown/50">{order.customer_name}</p>
-                        <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
-                      </div>
-                      <span className={`font-body text-xs px-2 py-0.5 rounded-full ${
-                        order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
-                      </span>
+    return (
+        <div className="min-h-screen bg-brew-beige p-6">
+            <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                    <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
+                    <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Employee fulfillment</p>
+                </div>
+
+                {actionError && (
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex justify-between">
+                        <p className="font-body text-sm text-red-700">{actionError}</p>
+                        <button onClick={() => setActionError('')} className="text-red-400 text-sm">✕</button>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    {/* Orders to fulfill */}
+                    <div>
+                        <h2 className="font-heading text-2xl text-brew-brown mb-4">
+                            READY TO PREPARE ({orders.length})
+                        </h2>
+                        {loading ? (
+                            <p className="font-body text-brew-brown/50">Loading...</p>
+                        ) : orders.length === 0 ? (
+                            <div className="bg-brew-light rounded-2xl p-8 text-center">
+                                <p className="text-4xl mb-3">☕</p>
+                                <p className="font-body text-brew-brown/50">No orders waiting.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {orders.map(order => (
+                                    <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <p className="font-heading text-brew-brown text-lg">
+                                                    #{order.id.slice(0, 8).toUpperCase()}
+                                                </p>
+                                                <p className="font-body text-xs text-brew-brown/50">{order.customer_name}</p>
+                                                <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
+                                            </div>
+                                            <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                                }`}>
+                                                {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
+                                            </span>
+                                        </div>
+
+                                        {order.order_type === 'delivery' && order.delivery_address && (
+                                            <p className="font-body text-xs text-brew-brown/70 bg-brew-beige/50 rounded-lg px-3 py-2 mb-2">
+                                                📍 {order.delivery_address}
+                                            </p>
+                                        )}
+
+                                        <ul className="mb-3 space-y-1">
+                                            {order.order_items?.map((oi, i) => (
+                                                <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
+                                                    <span>{oi.quantity}× {oi.menu_items?.name}</span>
+                                                    <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <button
+                                            onClick={() => markReady(order)}
+                                            disabled={fulfilling === order.id}
+                                            className="w-full bg-brew-brown text-brew-beige font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-brew-dark disabled:opacity-50"
+                                        >
+                                            {fulfilling === order.id ? 'NOTIFYING...' : '☕ READY & NOTIFY CUSTOMER'}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {order.order_type === 'delivery' && order.delivery_address && (
-                      <p className="font-body text-xs text-brew-brown/70 bg-brew-beige/50 rounded-lg px-3 py-2 mb-2">
-                        📍 {order.delivery_address}
-                      </p>
-                    )}
-
-                    <ul className="mb-3 space-y-1">
-                      {order.order_items?.map((oi, i) => (
-                        <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
-                          <span>{oi.quantity}× {oi.menu_items?.name}</span>
-                          <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      onClick={() => markReady(order)}
-                      disabled={fulfilling === order.id}
-                      className="w-full bg-brew-brown text-brew-beige font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-brew-dark disabled:opacity-50"
-                    >
-                      {fulfilling === order.id ? 'NOTIFYING...' : '☕ READY & NOTIFY CUSTOMER'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Inventory */}
-          <div>
-            <h2 className="font-heading text-2xl text-brew-brown mb-4">INVENTORY</h2>
-            {sortedCats.map(cat => (
-              <div key={cat} className="mb-4">
-                <div className="bg-brew-brown/10 px-4 py-2 rounded-t-xl">
-                  <p className="font-heading text-sm text-brew-brown tracking-widest">{cat.toUpperCase()}</p>
-                </div>
-                <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
-                  {grouped[cat].map((item, idx) => (
-                    <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${
-                      idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
-                    }`}>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {item.best_seller && <span className="text-amber-400 text-xs shrink-0">⭐</span>}
-                        <p className="font-body font-medium text-brew-brown text-sm truncate">{item.name}</p>
-                      </div>
-                      <button
-                        onClick={() => toggleAvailability(item)}
-                        className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${
-                          item.is_available
-                            ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
-                            : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
-                        }`}
-                      >
-                        {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
-                      </button>
+                    {/* Inventory */}
+                    <div>
+                        <h2 className="font-heading text-2xl text-brew-brown mb-4">INVENTORY</h2>
+                        {sortedCats.map(cat => (
+                            <div key={cat} className="mb-4">
+                                <div className="bg-brew-brown/10 px-4 py-2 rounded-t-xl">
+                                    <p className="font-heading text-sm text-brew-brown tracking-widest">{cat.toUpperCase()}</p>
+                                </div>
+                                <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
+                                    {grouped[cat].map((item, idx) => (
+                                        <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
+                                            }`}>
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                {item.best_seller && <span className="text-amber-400 text-xs shrink-0">⭐</span>}
+                                                <p className="font-body font-medium text-brew-brown text-sm truncate">{item.name}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => toggleAvailability(item)}
+                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${item.is_available
+                                                        ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
+                                                        : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
+                                                    }`}
+                                            >
+                                                {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
 
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  )
+    )
 }

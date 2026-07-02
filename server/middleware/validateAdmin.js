@@ -10,10 +10,14 @@
  * @param {Function} next - Express next middleware function
  * @returns {void}
  */
+import { isValidToken } from '../routes/auth.js'
+
 export function validateAdmin(req, res, next) {
-  const secret = req.headers['x-admin-secret']
-  if (secret !== process.env.ADMIN_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  next()
+  const legacySecret = req.headers['x-admin-secret']
+  const token = req.headers['x-session-token']
+
+  if (legacySecret === process.env.ADMIN_SECRET) return next()
+  if (token && isValidToken(token)) return next()
+
+  return res.status(401).json({ error: 'Unauthorized' })
 }

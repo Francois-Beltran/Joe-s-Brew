@@ -51,6 +51,9 @@ app.use(express.json())
  * Route handlers
  * Note: Telegram webhook lives at /api/orders/webhook/telegram (see routes/orders.js)
  */
+import authRouter from './routes/auth.js'
+
+app.use('/api/auth', authRouter)
 app.use('/api/checkout', checkoutRouter)
 app.use('/api/orders', ordersRouter)
 

@@ -52,7 +52,7 @@ export default function Dashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'), // or 'joesbrew_employee_token' in Employee Dashboard
         },
         body: JSON.stringify({ orderId: order.id }),
       })
@@ -113,7 +113,7 @@ export default function Dashboard() {
       const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
         method: 'DELETE',
         headers: {
-          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
         },
       })
 
@@ -173,11 +173,10 @@ export default function Dashboard() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${
-                activeTab === tab
-                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-              }`}
+              className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
+                ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                }`}
             >
               {tab.toUpperCase()}
               {tab === 'unverified' && (
@@ -230,9 +229,8 @@ export default function Dashboard() {
 
                 {/* Order type + delivery info */}
                 <div className="flex items-center gap-2 mb-3">
-                  <span className={`font-body text-xs px-2 py-0.5 rounded-full ${
-                    order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                    }`}>
                     {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
                   </span>
                   {order.order_type === 'delivery' && order.delivery_fee > 0 && (
