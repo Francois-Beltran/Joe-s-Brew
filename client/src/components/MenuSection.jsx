@@ -203,6 +203,8 @@ export default function MenuSection() {
                 )
               }
 
+              const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
+              
               return isSwipeCategory ? (
                 category === 'Add-ons' ? (
                   <AddonRow key={category} categoryName={category} items={categoryItems} />
