@@ -211,7 +211,7 @@ export default function GCashModal({ onClose, onSuccess }) {
                       <option value="">Select your Sitio</option>
                       {deliveryZones.map(zone => (
                         <option key={zone.sitio_name} value={zone.sitio_name}>
-                          {zone.sitio_name} (+₱{Number(zone.fee).toFixed(0)})
+                          {zone.sitio_name} ({Number(zone.fee) * 100}%)
                         </option>
                       ))}
                     </select>
