@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar'
 import HeroSection from '../components/HeroSection'
 import MenuSection from '../components/MenuSection'
+import InstallPrompt from '../components/InstallPrompt'
 
 /**
  * Home page component
@@ -28,8 +29,9 @@ export default function Home() {
       </section>
 
       <footer className="bg-brew-dark text-brew-beige/40 py-6 text-center font-body text-sm">
-        © {new Date().getFullYear()} Joe's Brew · Est. 1939 · Brewing the perfect cup, every time.
-      </footer>
+        © {new Date().getFullYear()} Joe's Brew · Est. 1939 · Brewing the perfect cup, every time.
+      </footer>
+      <InstallPrompt />
     </main>
   )
 }
