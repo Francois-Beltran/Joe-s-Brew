@@ -14,7 +14,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-brew-brown text-brew-beige shadow-lg">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-brew-brown text-brew-beige shadow-lg transition-shadow duration-300">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="font-heading text-2xl tracking-widest">JOE'S BREW</h1>

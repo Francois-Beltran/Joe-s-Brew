@@ -29,7 +29,7 @@ const upload = multer({
  * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms } = req.body
   const screenshotFile = req.file
 
   try {
@@ -68,6 +68,9 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: 'Payment screenshot is required' })
     }
 
+    if (agreedToTerms !== 'true') {
+      return res.status(400).json({ error: 'You must agree to the Terms and Agreement.' })
+    }
     // Fetch authoritative prices from database
     const ids = items.map(i => i.menuItemId)
 

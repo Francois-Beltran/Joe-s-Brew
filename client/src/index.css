@@ -28,3 +28,43 @@ h1, h2, h3, h4 {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ============ UI/UX Polish additions ============ */
+
+/* Smooth universal transitions */
+button, a {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+/* Subtle press effect on buttons */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Card lift on hover for menu cards */
+.menu-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Smooth fade-in for page content */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Nicer focus rings for accessibility + polish */
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(74, 37, 17, 0.15);
+}
+
+/* Custom scrollbar for swipe rows (subtle, not hidden entirely on desktop) */
+.custom-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(74, 37, 17, 0.2);
+  border-radius: 10px;
+}

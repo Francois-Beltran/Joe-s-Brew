@@ -36,7 +36,7 @@ export default function Cart({ onClose }) {
         />
 
         {/* Drawer */}
-        <div className="w-full max-w-md bg-brew-light h-full flex flex-col shadow-2xl overflow-y-auto">
+        <div className="w-full max-w-md bg-brew-light h-full flex flex-col shadow-2xl overflow-y-auto animate-fade-in-up">
           <div className="p-6 border-b border-brew-brown/20 flex items-center justify-between">
             <h2 className="font-heading text-2xl text-brew-brown tracking-wider">YOUR ORDER</h2>
             <button onClick={onClose} className="text-brew-brown/60 hover:text-brew-brown text-2xl">✕</button>

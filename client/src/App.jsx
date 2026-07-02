@@ -6,9 +6,11 @@ import Dashboard from './pages/admin/Dashboard'
 import Success from './pages/Success'
 import EmployeeGuard from './components/EmployeeGuard'
 import EmployeeDashboard from './pages/employee/Dashboard'
+import TermsGate from './components/TermsGate'
 
 export default function App() {
   return (
+    <TermsGate>
     <CartProvider>
       <BrowserRouter>
         <Routes>
@@ -33,5 +35,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </CartProvider>
+    </TermsGate>
   )
 }

@@ -20,6 +20,7 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [error, setError] = useState('')
   const [stage, setStage] = useState('instructions')
   const [result, setResult] = useState(null)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const fileInputRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
@@ -61,6 +62,10 @@ export default function GCashModal({ onClose, onSuccess }) {
       setError('Please upload your GCash payment screenshot.')
       return
     }
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms and Agreement before placing your order.')
+      return
+    }
 
     setLoading(true)
     setError('')
@@ -77,6 +82,7 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('landmark', landmark.trim())
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
+      formData.append('agreedToTerms', agreedToTerms.toString())
 
       const res = await fetch(`${API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
@@ -148,7 +154,7 @@ export default function GCashModal({ onClose, onSuccess }) {
               {/* Steps */}
               <ol className="space-y-2">
                 {[
-                  `Open GCash and send exactly ₱${displayTotal.toFixed(2)} to ${GCASH_NUMBER}`,
+                  `Open GCash and send the amount ₱${grandTotal.toFixed(2)} to ${GCASH_NUMBER}`,
                   'Wait for the GCash payment confirmation screen',
                   'Copy your 13-digit reference number from the confirmation',
                   'Fill in the form below and upload your screenshot',
@@ -213,7 +219,7 @@ export default function GCashModal({ onClose, onSuccess }) {
 
                   <div>
                     <label className="font-body text-sm text-brew-brown/70 mb-1 block">
-                      Landmark <span className="text-brew-brown/40 text-xs">(optional)</span>
+                      Landmark <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -282,9 +288,12 @@ export default function GCashModal({ onClose, onSuccess }) {
 
               {/* Screenshot Upload */}
               <div>
-                <label className="font-body text-sm text-brew-brown/70 mb-2 block">
+                <label className="font-body text-sm text-brew-brown/70 mb-1 block">
                   Payment screenshot <span className="text-red-500">*</span>
                 </label>
+                <p className="font-body text-xs text-amber-600 mb-2">
+                  ⚠️ Must be a screenshot from the official GCash app. Other payment apps or edited images will be considered invalid and your order may be rejected.
+                </p>
 
                 {preview ? (
                   <div className="relative">
@@ -319,6 +328,28 @@ export default function GCashModal({ onClose, onSuccess }) {
                 />
               </div>
 
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={e => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-brew-brown shrink-0"
+                />
+                <span className="font-body text-xs text-brew-brown/70 leading-relaxed">
+                  I have read and agree to Joe's Brew's{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem('joesbrew_terms_accepted')
+                      window.location.reload()
+                    }}
+                    className="text-blue-600 underline"
+                  >
+                    Terms and Agreement
+                  </button>
+                </span>
+              </label>
+
               {error && (
                 <p className="font-body text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2">
                   {error}
@@ -330,8 +361,10 @@ export default function GCashModal({ onClose, onSuccess }) {
                 disabled={
                   loading || !screenshot || customerName.trim().length < 2 ||
                   customerPhone.length !== 11 || refNumber.length !== 13 ||
-                  (orderType === 'delivery' && !sitio.trim())
+                  (orderType === 'delivery' && !sitio.trim()) ||
+                  !agreedToTerms
                 }
+
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >
                 {loading ? (
@@ -388,6 +421,6 @@ export default function GCashModal({ onClose, onSuccess }) {
 
         </div>
       </div>
-    </div>
+    </div >
   )
 }

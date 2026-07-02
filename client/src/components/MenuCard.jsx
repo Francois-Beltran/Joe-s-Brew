@@ -18,7 +18,7 @@ function StarRating({ rating }) {
 export default function MenuCard({ item }) {
 
   const { addItem, cart } = useCart()
-    // Default to base size
+  // Default to base size
   const hasGrande = item.price_grande != null
   const hasKing = item.price_king != null
   const [selectedSize, setSelectedSize] = useState('base')
@@ -97,46 +97,43 @@ export default function MenuCard({ item }) {
 
         {/* Size selector — only shown when grande price exists */}
         {(hasGrande || hasKing) && (
-  <div className="flex gap-1.5 mb-3 flex-wrap">
-    <button
-      onClick={() => setSelectedSize('base')}
-      className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
-        selectedSize === 'base'
-          ? 'bg-brew-brown text-brew-beige border-brew-brown'
-          : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-      }`}
-    >
-      {item.size_label_base || 'Medio'}<br/>
-      <span className="text-[10px]">₱{Number(item.price).toFixed(0)}</span>
-    </button>
-    {hasGrande && (
-      <button
-        onClick={() => setSelectedSize('grande')}
-        className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
-          selectedSize === 'grande'
-            ? 'bg-brew-brown text-brew-beige border-brew-brown'
-            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-        }`}
-      >
-        {item.size_label_grande || 'Grande'}<br/>
-        <span className="text-[10px]">₱{Number(item.price_grande).toFixed(0)}</span>
-      </button>
-    )}
-    {hasKing && (
-      <button
-        onClick={() => setSelectedSize('king')}
-        className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${
-          selectedSize === 'king'
-            ? 'bg-brew-brown text-brew-beige border-brew-brown'
-            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-        }`}
-      >
-        {item.size_label_king || 'King'}<br/>
-        <span className="text-[10px]">₱{Number(item.price_king).toFixed(0)}</span>
-      </button>
-    )}
-  </div>
-)}
+          <div className="flex gap-1.5 mb-3 flex-wrap">
+            <button
+              onClick={() => setSelectedSize('base')}
+              className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'base'
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                }`}
+            >
+              {item.size_label_base || 'Medio'}<br />
+              <span className="text-[10px]">₱{Number(item.price).toFixed(0)}</span>
+            </button>
+            {hasGrande && (
+              <button
+                onClick={() => setSelectedSize('grande')}
+                className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'grande'
+                    ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                    : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                  }`}
+              >
+                {item.size_label_grande || 'Grande'}<br />
+                <span className="text-[10px]">₱{Number(item.price_grande).toFixed(0)}</span>
+              </button>
+            )}
+            {hasKing && (
+              <button
+                onClick={() => setSelectedSize('king')}
+                className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'king'
+                    ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                    : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                  }`}
+              >
+                {item.size_label_king || 'King'}<br />
+                <span className="text-[10px]">₱{Number(item.price_king).toFixed(0)}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Single size label when no grande option */}
         {!hasGrande && (
@@ -147,7 +144,7 @@ export default function MenuCard({ item }) {
 
         <button
           onClick={handleAdd}
-          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark transition-colors text-sm"
+          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 transition-all text-sm"
         >
           {inCart ? `ADD AGAIN (${inCart.quantity} in cart)` : 'ADD TO CART'}
         </button>
