@@ -24,8 +24,8 @@ export default function GCashModal({ onClose, onSuccess }) {
   const fileInputRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
-  const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09XXXXXXXXX'
-  const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'Joe Dela Cruz'
+  const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
+  const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'RO***A O.'
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
   const grandTotal = displayTotal + (orderType === 'delivery' ? selectedFee : 0)
 
@@ -292,7 +292,7 @@ export default function GCashModal({ onClose, onSuccess }) {
                   Payment screenshot <span className="text-red-500">*</span>
                 </label>
                 <p className="font-body text-xs text-amber-600 mb-2">
-                  ⚠️ Must be a screenshot from the official GCash app. Other payment apps or edited images will be considered invalid and your order may be rejected.
+                  ⚠️ Must be a screenshot from the official Online Payment app, edited images will be considered invalid and your order may be rejected.
                 </p>
 
                 {preview ? (
