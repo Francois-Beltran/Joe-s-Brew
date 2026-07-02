@@ -27,7 +27,7 @@ export default function GCashModal({ onClose, onSuccess }) {
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'RO***A O.'
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
-  const grandTotal = displayTotal + (orderType === 'delivery' ? (displayTotal * selectedFee) : 0);
+  const grandTotal = displayTotal + (orderType === 'delivery' ? Math.round(displayTotal * selectedFee) : 0);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
