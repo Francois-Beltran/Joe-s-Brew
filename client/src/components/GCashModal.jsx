@@ -6,6 +6,8 @@ export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [orderType, setOrderType] = useState('pickup')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [refNumber, setRefNumber] = useState('')
   const [screenshot, setScreenshot] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -18,6 +20,8 @@ export default function GCashModal({ onClose, onSuccess }) {
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09XXXXXXXXX'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'Joe Dela Cruz'
+  const DELIVERY_FEE = Number(import.meta.env.VITE_DELIVERY_FEE || 49)
+  const grandTotal = displayTotal + (orderType === 'delivery' ? DELIVERY_FEE : 0)
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
@@ -42,6 +46,10 @@ export default function GCashModal({ onClose, onSuccess }) {
       setError('Enter a valid PH number starting with 09.')
       return
     }
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
+      setError('Please enter your delivery address.')
+      return
+    }
     if (!refNumber.match(/^\d{13}$/)) {
       setError('GCash reference number must be exactly 13 digits.')
       return
@@ -61,6 +69,8 @@ export default function GCashModal({ onClose, onSuccess }) {
       ))
       formData.append('customerName', customerName.trim())
       formData.append('customerPhone', customerPhone)
+      formData.append('orderType', orderType)
+      formData.append('deliveryAddress', deliveryAddress.trim())
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
 
@@ -95,7 +105,7 @@ export default function GCashModal({ onClose, onSuccess }) {
             <h2 className="font-heading text-2xl tracking-wider">PAY WITH GCASH</h2>
             <p className="font-body text-brew-beige/60 text-sm">Joe's Brew · Order Total</p>
           </div>
-          <p className="font-heading text-3xl">₱{displayTotal.toFixed(2)}</p>
+          <p className="font-heading text-3xl">₱{grandTotal.toFixed(2)}</p>
         </div>
 
         <div className="p-6 space-y-5">
@@ -132,6 +142,48 @@ export default function GCashModal({ onClose, onSuccess }) {
               </ol>
 
               <hr className="border-brew-brown/20" />
+
+              {/* Pickup or Delivery */}
+              <div>
+                <label className="font-body text-sm text-brew-brown/70 mb-2 block">
+                  Order Type <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOrderType('pickup')}
+                    className={`flex-1 py-2 rounded-xl font-heading text-sm border-2 transition-colors ${orderType === 'pickup'
+                      ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                      : 'text-brew-brown border-brew-brown/30'
+                      }`}
+                  >
+                    🏪 Pickup
+                  </button>
+                  <button
+                    onClick={() => setOrderType('delivery')}
+                    className={`flex-1 py-2 rounded-xl font-heading text-sm border-2 transition-colors ${orderType === 'delivery'
+                      ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                      : 'text-brew-brown border-brew-brown/30'
+                      }`}
+                  >
+                    🛵 Delivery (+₱{DELIVERY_FEE})
+                  </button>
+                </div>
+              </div>
+
+              {orderType === 'delivery' && (
+                <div>
+                  <label className="font-body text-sm text-brew-brown/70 mb-1 block">
+                    Delivery Address <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={deliveryAddress}
+                    onChange={e => setDeliveryAddress(e.target.value)}
+                    rows={2}
+                    placeholder="House/Unit No., Street, Barangay, City"
+                    className="w-full border-2 border-brew-brown/30 rounded-xl px-4 py-3 font-body text-brew-brown bg-transparent placeholder:text-brew-brown/30 focus:outline-none focus:border-brew-brown resize-none"
+                  />
+                </div>
+              )}
 
               {/* Customer Name */}
               <div>
@@ -235,11 +287,9 @@ export default function GCashModal({ onClose, onSuccess }) {
               <button
                 onClick={handleSubmit}
                 disabled={
-                  loading ||
-                  !screenshot ||
-                  customerName.trim().length < 2 ||
-                  customerPhone.length !== 11 ||
-                  refNumber.length !== 13
+                  loading || !screenshot || customerName.trim().length < 2 ||
+                  customerPhone.length !== 11 || refNumber.length !== 13 ||
+                  (orderType === 'delivery' && !deliveryAddress.trim())
                 }
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >

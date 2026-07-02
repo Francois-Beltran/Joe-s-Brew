@@ -11,8 +11,8 @@ gsap.registerPlugin(ScrollTrigger)
 // Desktop always shows grid
 const SWIPE_CATEGORIES = [
   'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
-  'Milk Tea', 'Fruity Seltzer', 'Coffee', 'Non-Coffee',
-  'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+  'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
+  'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
 ]
 
 function SwipeRow({ items, categoryName }) {
@@ -142,20 +142,9 @@ export default function MenuSection() {
 
   // Group items by category, preserving a sensible order
   const CATEGORY_ORDER = [
-    'Hot Brew',
-    'Cold Brew',
-    'Barista Signature',
-    'Frappe',
-    'Milk Tea',
-    'Fruity Seltzer',
-    'Coffee',
-    'Non-Coffee',
-    'Takoyaki',
-    'Waffles',
-    'Nachos',
-    'Fries',
-    'Food',
-    'Add-ons',
+    'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
+    'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
+    'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
   ]
 
   const grouped = items.reduce((acc, item) => {
@@ -200,11 +189,28 @@ export default function MenuSection() {
               }
 
               // 2. Handle everything else
-              const isSwipeCategory = SWIPE_CATEGORIES.includes(category);
+              if (category === 'Frappe') {
+                const coffeeBase = categoryItems.filter(i => i.subcategory === 'Coffee Base')
+                const creamBase = categoryItems.filter(i => i.subcategory === 'Cream Base')
+                const other = categoryItems.filter(i => !i.subcategory)
+
+                return (
+                  <div key={category}>
+                    {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} />}
+                    {creamBase.length > 0 && <SwipeRow categoryName="Frappe — Cream Base" items={creamBase} />}
+                    {other.length > 0 && <SwipeRow categoryName="Frappe" items={other} />}
+                  </div>
+                )
+              }
+
               return isSwipeCategory ? (
-                <SwipeRow key={category} items={categoryItems} categoryName={category} />
+                category === 'Add-ons' ? (
+                  <AddonRow key={category} categoryName={category} items={categoryItems} />
+                ) : (
+                  <SwipeRow key={category} categoryName={category} items={categoryItems} />
+                )
               ) : (
-                <GridSection key={category} items={categoryItems} categoryName={category} />
+                <GridSection key={category} categoryName={category} items={categoryItems} />
               );
             })}
           </div>

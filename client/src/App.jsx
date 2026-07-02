@@ -4,6 +4,8 @@ import AdminGuard from './components/AdminGuard'
 import Home from './pages/Home'
 import Dashboard from './pages/admin/Dashboard'
 import Success from './pages/Success'
+import EmployeeGuard from './components/EmployeeGuard'
+import EmployeeDashboard from './pages/employee/Dashboard'
 
 export default function App() {
   return (
@@ -18,6 +20,14 @@ export default function App() {
               <AdminGuard>
                 <Dashboard />
               </AdminGuard>
+            }
+          />
+          <Route
+            path="/employee"
+            element={
+              <EmployeeGuard>
+                <EmployeeDashboard />
+              </EmployeeGuard>
             }
           />
         </Routes>

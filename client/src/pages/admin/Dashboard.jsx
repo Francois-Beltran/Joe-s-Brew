@@ -3,14 +3,13 @@ import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 
 /**
- * Admin dashboard component for managing orders and inventory
+ * Admin dashboard — verifies/rejects GCash payments only.
+ * Fulfillment and inventory now live in the Employee Dashboard (/employee).
  */
 export default function Dashboard() {
   const [orders, setOrders] = useState([])
-  const [menuItems, setMenuItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('unverified')
-  const [fulfilling, setFulfilling] = useState(null)
   const [verifying, setVerifying] = useState(null)
   const [lightbox, setLightbox] = useState(null)
   const [actionError, setActionError] = useState('')
@@ -34,34 +33,12 @@ export default function Dashboard() {
     }
   }
 
-  const fetchMenu = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('id, name, price, is_available, category, rating, best_seller')
-        .order('category')
-
-      if (error) {
-        console.error('Failed to fetch menu:', error)
-        return
-      }
-      setMenuItems(data ?? [])
-    } catch (error) {
-      console.error('Fetch menu error:', error)
-    }
-  }
-
   useEffect(() => {
     fetchOrders()
-    fetchMenu()
 
     const channel = supabase
       .channel('admin-orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => fetchOrders()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
       .subscribe()
 
     return () => supabase.removeChannel(channel)
@@ -126,34 +103,6 @@ export default function Dashboard() {
     }
   }
 
-  const markReady = async (order) => {
-    setFulfilling(order.id)
-    setActionError('')
-    try {
-      const res = await fetch(`${API_URL}/api/orders/fulfill`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
-        },
-        body: JSON.stringify({ orderId: order.id }),
-      })
-
-      const data = await res.json().catch(() => null)
-
-      if (!res.ok) {
-        setActionError(data?.error || `Failed to fulfill (status ${res.status})`)
-        return
-      }
-
-      fetchOrders()
-    } catch (error) {
-      setActionError('Network error: ' + error.message)
-    } finally {
-      setFulfilling(null)
-    }
-  }
-
   const deleteOrder = async (order) => {
     if (!confirm(`Permanently delete order #${order.id.slice(0, 8).toUpperCase()}? This cannot be undone.`)) {
       return
@@ -181,27 +130,6 @@ export default function Dashboard() {
     }
   }
 
-  const toggleAvailability = async (item) => {
-    try {
-      const { error } = await supabase
-        .from('menu_items')
-        .update({ is_available: !item.is_available })
-        .eq('id', item.id)
-
-      if (error) {
-        console.error('Toggle availability error:', error)
-        setActionError('Failed to update item availability: ' + error.message)
-        return
-      }
-
-      setMenuItems(prev =>
-        prev.map(m => m.id === item.id ? { ...m, is_available: !m.is_available } : m)
-      )
-    } catch (error) {
-      setActionError('Failed to update item availability')
-    }
-  }
-
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'unverified') return ['pending', 'unverified'].includes(o.status)
     if (activeTab === 'paid') return o.status === 'paid'
@@ -222,11 +150,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-brew-beige p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-3xl mx-auto">
 
         <div className="mb-6">
           <h1 className="font-heading text-5xl text-brew-brown">ADMIN DASHBOARD</h1>
-          <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Live order management</p>
+          <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Payment verification</p>
         </div>
 
         {actionError && (
@@ -239,237 +167,166 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <h2 className="font-heading text-2xl text-brew-brown tracking-wide">ORDERS</h2>
+          {['unverified', 'paid', 'rejected', 'all'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${
+                activeTab === tab
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+              }`}
+            >
+              {tab.toUpperCase()}
+              {tab === 'unverified' && (
+                <span className="ml-1">
+                  ({orders.filter(o => ['pending', 'unverified'].includes(o.status)).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-          {/* Orders Panel */}
-          <div>
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <h2 className="font-heading text-2xl text-brew-brown tracking-wide">ORDERS</h2>
-              {['unverified', 'paid', 'rejected', 'all'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
-                      ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                      : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-                    }`}
-                >
-                  {tab.toUpperCase()}
-                  {tab === 'unverified' && (
-                    <span className="ml-1">
-                      ({orders.filter(o => ['pending', 'unverified'].includes(o.status)).length})
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {loading ? (
-              <p className="font-body text-brew-brown/50">Loading...</p>
-            ) : filteredOrders.length === 0 ? (
-              <div className="bg-brew-light rounded-2xl p-8 text-center">
-                <p className="text-4xl mb-3">☕</p>
-                <p className="font-body text-brew-brown/50">No orders in this view.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredOrders.map(order => (
-                  <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
-
-                    {/* Delete button — top right corner */}
-                    <div className="flex justify-end mb-1">
-                      <button
-                        onClick={() => deleteOrder(order)}
-                        className="text-brew-brown/30 hover:text-red-500 transition-colors text-xs font-body"
-                      >
-                        🗑 Delete
-                      </button>
-                    </div>
-
-                    {/* Order header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <p className="font-heading text-brew-brown text-lg">
-                          #{order.id.slice(0, 8).toUpperCase()}
-                        </p>
-                        <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
-                        {order.telegram_username && (
-                          <p className="font-body text-xs text-blue-500">@{order.telegram_username}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-heading text-brew-brown">₱{Number(order.total_amount).toFixed(2)}</p>
-                        <span className={`font-body text-xs px-2 py-0.5 rounded-full ${statusBadge(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Rejection reason if applicable */}
-                    {order.status === 'rejected' && order.rejection_reason && (
-                      <p className="font-body text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
-                        Reason: {order.rejection_reason}
-                      </p>
-                    )}
-
-                    {/* Items */}
-                    <ul className="mb-3 space-y-1">
-                      {order.order_items?.map((oi, i) => (
-                        <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
-                          <span>{oi.quantity}× {oi.menu_items?.name}</span>
-                          <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* GCash info */}
-                    <div className="bg-brew-beige/50 rounded-xl p-3 mb-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-body text-xs text-brew-brown/60">GCash Ref</span>
-                        <span className="font-heading text-sm text-brew-brown tracking-wider">
-                          {order.gcash_ref ?? (
-                            <span className="text-amber-600 font-body text-xs">Not provided</span>
-                          )}
-                        </span>
-                      </div>
-                      {order.gcash_screenshot_url && (
-                        <button
-                          onClick={() => setLightbox(order.gcash_screenshot_url)}
-                          className="font-body text-xs text-blue-600 hover:underline mt-1"
-                        >
-                          📸 View screenshot
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      {['pending', 'unverified'].includes(order.status) && (
-                        <>
-                          <button
-                            onClick={() => verifyOrder(order)}
-                            disabled={verifying === order.id}
-                            className="flex-1 bg-green-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
-                          >
-                            {verifying === order.id ? 'PROCESSING...' : '✓ VERIFY'}
-                          </button>
-                          <button
-                            onClick={() => rejectOrder(order)}
-                            disabled={verifying === order.id}
-                            className="flex-1 bg-red-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
-                          >
-                            ✕ REJECT
-                          </button>
-                        </>
-                      )}
-                      {order.status === 'paid' && (
-                        <button
-                          onClick={() => markReady(order)}
-                          disabled={fulfilling === order.id}
-                          className="flex-1 bg-brew-brown text-brew-beige font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-50"
-                        >
-                          {fulfilling === order.id ? 'NOTIFYING...' : '☕ READY & NOTIFY'}
-                        </button>
-                      )}
-                      {order.status === 'ready' && (
-                        <p className="flex-1 text-center font-body text-xs text-purple-700 py-2">
-                          ✓ Picked up / notified
-                        </p>
-                      )}
-                      {order.status === 'rejected' && (
-                        <p className="flex-1 text-center font-body text-xs text-red-700 py-2">
-                          ✕ Rejected
-                        </p>
-                      )}
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-            )}
+        {loading ? (
+          <p className="font-body text-brew-brown/50">Loading...</p>
+        ) : filteredOrders.length === 0 ? (
+          <div className="bg-brew-light rounded-2xl p-8 text-center">
+            <p className="text-4xl mb-3">☕</p>
+            <p className="font-body text-brew-brown/50">No orders in this view.</p>
           </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredOrders.map(order => (
+              <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
 
-          {/* Inventory Panel */}
-          <div>
-            <h2 className="font-heading text-2xl text-brew-brown mb-4 tracking-wide">INVENTORY</h2>
+                {/* Delete button */}
+                <div className="flex justify-end mb-1">
+                  <button
+                    onClick={() => deleteOrder(order)}
+                    className="text-brew-brown/30 hover:text-red-500 transition-colors text-xs font-body"
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
 
-            {(() => {
-              // Group menu items by category
-              const INVENTORY_ORDER = [
-                'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
-                'Milk Tea', 'Fruity Seltzer', 'Coffee', 'Non-Coffee',
-                'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
-              ]
-
-              const grouped = menuItems.reduce((acc, item) => {
-                const cat = item.category || 'Other'
-                if (!acc[cat]) acc[cat] = []
-                acc[cat].push(item)
-                return acc
-              }, {})
-
-              const sortedCats = Object.keys(grouped).sort((a, b) => {
-                const ai = INVENTORY_ORDER.indexOf(a)
-                const bi = INVENTORY_ORDER.indexOf(b)
-                if (ai === -1 && bi === -1) return a.localeCompare(b)
-                if (ai === -1) return 1
-                if (bi === -1) return -1
-                return ai - bi
-              })
-
-              return sortedCats.map(cat => (
-                <div key={cat} className="mb-4">
-                  {/* Category header */}
-                  <div className="bg-brew-brown/10 px-4 py-2 rounded-t-xl">
-                    <p className="font-heading text-sm text-brew-brown tracking-widest">
-                      {cat.toUpperCase()}
+                {/* Order header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-heading text-brew-brown text-lg">
+                      #{order.id.slice(0, 8).toUpperCase()}
                     </p>
+                    <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
+                    <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
                   </div>
-
-                  {/* Items in this category */}
-                  <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
-                    {grouped[cat].map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-center justify-between px-4 py-3 gap-3 ${idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
-                          }`}
-                      >
-                        {/* Item info */}
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {item.best_seller && (
-                            <span className="text-amber-400 text-xs shrink-0">⭐</span>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-body font-medium text-brew-brown text-sm truncate">
-                              {item.name}
-                            </p>
-                            <p className="font-body text-xs text-brew-brown/40">
-                              ₱{Number(item.price).toFixed(0)}
-                              {item.price_grande ? ` / ₱${Number(item.price_grande).toFixed(0)}` : ''}
-                              {item.price_king ? ` / ₱${Number(item.price_king).toFixed(0)}` : ''}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Toggle button — no longer cut off */}
-                        <button
-                          onClick={() => toggleAvailability(item)}
-                          className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider transition-colors whitespace-nowrap ${item.is_available
-                              ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
-                              : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
-                            }`}
-                        >
-                          {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
-                        </button>
-                      </div>
-                    ))}
+                  <div className="text-right">
+                    <p className="font-heading text-brew-brown">₱{Number(order.total_amount).toFixed(2)}</p>
+                    <span className={`font-body text-xs px-2 py-0.5 rounded-full ${statusBadge(order.status)}`}>
+                      {order.status}
+                    </span>
                   </div>
                 </div>
-              ))
-            })()}
-          </div>
 
-        </div>
+                {/* Order type + delivery info */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`font-body text-xs px-2 py-0.5 rounded-full ${
+                    order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
+                  </span>
+                  {order.order_type === 'delivery' && order.delivery_fee > 0 && (
+                    <span className="font-body text-xs text-brew-brown/50">
+                      +₱{Number(order.delivery_fee).toFixed(2)} delivery fee
+                    </span>
+                  )}
+                </div>
+
+                {order.order_type === 'delivery' && order.delivery_address && (
+                  <p className="font-body text-xs text-brew-brown/70 bg-brew-beige/50 rounded-lg px-3 py-2 mb-3">
+                    📍 {order.delivery_address}
+                  </p>
+                )}
+
+                {/* Rejection reason */}
+                {order.status === 'rejected' && order.rejection_reason && (
+                  <p className="font-body text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
+                    Reason: {order.rejection_reason}
+                  </p>
+                )}
+
+                {/* Items */}
+                <ul className="mb-3 space-y-1">
+                  {order.order_items?.map((oi, i) => (
+                    <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
+                      <span>{oi.quantity}× {oi.menu_items?.name}</span>
+                      <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* GCash info */}
+                <div className="bg-brew-beige/50 rounded-xl p-3 mb-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-body text-xs text-brew-brown/60">GCash Ref</span>
+                    <span className="font-heading text-sm text-brew-brown tracking-wider">
+                      {order.gcash_ref ?? (
+                        <span className="text-amber-600 font-body text-xs">Not provided</span>
+                      )}
+                    </span>
+                  </div>
+                  {order.gcash_screenshot_url && (
+                    <button
+                      onClick={() => setLightbox(order.gcash_screenshot_url)}
+                      className="font-body text-xs text-blue-600 hover:underline mt-1"
+                    >
+                      📸 View screenshot
+                    </button>
+                  )}
+                </div>
+
+                {/* Action buttons — verify/reject only, fulfillment moved to Employee Dashboard */}
+                <div className="flex gap-2">
+                  {['pending', 'unverified'].includes(order.status) && (
+                    <>
+                      <button
+                        onClick={() => verifyOrder(order)}
+                        disabled={verifying === order.id}
+                        className="flex-1 bg-green-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        {verifying === order.id ? 'PROCESSING...' : '✓ VERIFY'}
+                      </button>
+                      <button
+                        onClick={() => rejectOrder(order)}
+                        disabled={verifying === order.id}
+                        className="flex-1 bg-red-600 text-white font-heading text-xs tracking-wider py-2 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        ✕ REJECT
+                      </button>
+                    </>
+                  )}
+                  {order.status === 'paid' && (
+                    <p className="flex-1 text-center font-body text-xs text-blue-700 py-2">
+                      ✓ Confirmed — sent to Order Dashboard
+                    </p>
+                  )}
+                  {order.status === 'ready' && (
+                    <p className="flex-1 text-center font-body text-xs text-purple-700 py-2">
+                      ✓ Picked up / notified
+                    </p>
+                  )}
+                  {order.status === 'rejected' && (
+                    <p className="flex-1 text-center font-body text-xs text-red-700 py-2">
+                      ✕ Rejected
+                    </p>
+                  )}
+                </div>
+
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
 
       {lightbox && (

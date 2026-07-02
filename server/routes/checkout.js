@@ -29,7 +29,7 @@ const upload = multer({
  * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, customerPhone } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, deliveryAddress } = req.body
   const screenshotFile = req.file
 
   try {
@@ -55,6 +55,13 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     if (!customerPhone?.match(/^09\d{9}$/)) {
       return res.status(400).json({ error: 'Invalid phone number format. Use 09XXXXXXXXX' })
+    }
+
+    if (!['pickup', 'delivery'].includes(orderType)) {
+      return res.status(400).json({ error: 'Invalid order type' })
+    }
+    if (orderType === 'delivery' && !deliveryAddress?.trim()) {
+      return res.status(400).json({ error: 'Delivery address is required' })
     }
 
     if (!screenshotFile) {
@@ -99,7 +106,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       king: i.price_king ?? i.price_grande ?? i.price,
     }]))
 
-    const totalAmount = items.reduce((sum, i) => {
+    const itemsTotal = items.reduce((sum, i) => {
       const prices = priceMap[i.menuItemId]
       const unitPrice =
         i.size === 'king' ? prices.king :
@@ -107,6 +114,10 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
             prices.base
       return sum + unitPrice * i.quantity
     }, 0)
+
+    // Delivery fee is server-authoritative — never trust a client-supplied fee
+    const deliveryFee = orderType === 'delivery' ? Number(process.env.DELIVERY_FEE || 0) : 0
+    const totalAmount = itemsTotal + deliveryFee
 
     // Check for duplicate reference number to prevent fraud
     const { data: duplicate } = await supabaseAdmin
@@ -159,6 +170,9 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         gcash_screenshot_url: screenshotUrl,
         gcash_verified: false,
         customer_phone: '+63' + customerPhone.slice(1),
+        order_type: orderType,
+        delivery_fee: deliveryFee,
+        delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
       })
       .select()
       .single()
