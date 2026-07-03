@@ -1,9 +1,7 @@
-import { useState } from 'react'
-import { useCart } from '../hooks/useCart'
-import { useState, useEffect } from 'react'
-import { API_URL } from '../lib/api'
-import GCashModal from './GCashModal'
-
+import { useState, useEffect } from 'react';
+import { useCart } from '../hooks/useCart';
+import { API_URL } from '../lib/api';
+import GCashModal from './GCashModal';
 /**
  * Shopping cart drawer component
  * Displays cart items, allows quantity adjustments, and initiates GCash payment
