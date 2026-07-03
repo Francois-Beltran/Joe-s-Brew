@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useCart } from '../hooks/useCart';
 import { API_URL } from '../lib/api';
 import GCashModal from './GCashModal';
+
 /**
  * Shopping cart drawer component
  * Displays cart items, allows quantity adjustments, and initiates GCash payment
@@ -16,20 +17,28 @@ export default function Cart({ onClose }) {
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
-  // Inside the component, add:
   const [shopOpen, setShopOpen] = useState(true)
+  const [statusLoading, setStatusLoading] = useState(false)
+
+  const checkShopStatus = async () => {
+    setStatusLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/api/shop/status`)
+      const data = await res.json()
+      setShopOpen(data.isOpen)
+    } catch {
+      setShopOpen(true) // fail-open
+    } finally {
+      setStatusLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Check shop status whenever the cart drawer opens
-    fetch(`${API_URL}/api/shop/status`)
-      .then(res => res.json())
-      .then(data => setShopOpen(data.isOpen))
-      .catch(() => setShopOpen(true)) // fail-open so a network hiccup doesn't block orders unnecessarily
+    checkShopStatus()
+    const interval = setInterval(checkShopStatus, 30000) // recheck every 30s
+    return () => clearInterval(interval)
   }, [])
-  /**
-   * Handles successful payment completion
-   * Closes cart and redirects to success page
-   */
+
   const handleSuccess = () => {
     setShowGCash(false)
     onClose()
@@ -95,11 +104,23 @@ export default function Cart({ onClose }) {
                   <span>₱{displayTotal.toFixed(2)}</span>
                 </div>
 
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-body text-brew-brown/70">Shop Status</span>
+                  <button 
+                    onClick={checkShopStatus}
+                    disabled={statusLoading}
+                    className="text-xs underline"
+                  >
+                    {shopOpen ? '🟢 Open' : '🔴 Closed'} {statusLoading && '⋯'}
+                  </button>
+                </div>
+
                 {!shopOpen && (
                   <p className="font-body text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 text-center mb-2">
                     🔒 We're currently closed. You can still browse, but checkout is disabled until we reopen.
                   </p>
                 )}
+
                 <button
                   onClick={() => setShowGCash(true)}
                   disabled={!shopOpen}
