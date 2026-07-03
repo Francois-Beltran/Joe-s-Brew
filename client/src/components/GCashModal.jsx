@@ -162,7 +162,7 @@ export default function GCashModal({ onClose, onSuccess }) {
     fetchZones()
   }, [])
 
-  // Delivery fee logic based on your rules
+  // Delivery fee logic
   useEffect(() => {
     const zone = deliveryZones.find(z => z.sitio_name === sitio)
     if (!zone) {
@@ -172,10 +172,8 @@ export default function GCashModal({ onClose, onSuccess }) {
 
     if (displayTotal >= 1000) {
       setSelectedFee(0)                    // Free for all at ₱1000+
-    } else if (sitio === 'Cogtong' && displayTotal >= 200) {
-      setSelectedFee(0)                    // Free for Cogtong at ₱200+
-    } else if (displayTotal < 500) {
-      setSelectedFee(0)                    // Block other sitios below ₱500
+    } else if (sitio === 'Cogtong') {
+      setSelectedFee(0)                    // Cogtong is free above ₱200
     } else {
       setSelectedFee(Number(zone.fee))
     }
@@ -317,7 +315,7 @@ Thank you for choosing Joe's Brew!
                         ⚠️ Minimum ₱500 order required for delivery to this Sitio.
                       </p>
                     )}
-                    {sitio && selectedFee === 0 && displayTotal >= (sitio === 'Cogtong' ? 200 : 500) && (
+                    {sitio && selectedFee === 0 && displayTotal >= (sitio === 'Cogtong' ? 200 : 1000) && (
                       <p className="font-body text-xs text-green-600 mt-1">🎉 Free delivery on this order!</p>
                     )}
                   </div>
