@@ -77,6 +77,19 @@ export default function GCashModal({ onClose, onSuccess }) {
       setError('Please select your Sitio.')
       return
     }
+
+    // Delivery minimum order rules
+    if (orderType === 'delivery') {
+      if (sitio === 'Cogtong' && displayTotal < 200) {
+        setError('Minimum order of ₱200 is required for delivery to Cogtong.')
+        return
+      }
+      if (sitio !== 'Cogtong' && displayTotal < 500) {
+        setError('Minimum order of ₱500 is required for delivery to this Sitio.')
+        return
+      }
+    }
+
     if (!refNumber.match(/^\d{13}$/)) {
       setError('GCash reference number must be exactly 13 digits.')
       return
@@ -149,18 +162,20 @@ export default function GCashModal({ onClose, onSuccess }) {
     fetchZones()
   }, [])
 
+  // Delivery fee logic based on your rules
   useEffect(() => {
-    const NEAR_SITIOS = ['Cogtong', 'Tawid Proper', 'Panas Proper']
     const zone = deliveryZones.find(z => z.sitio_name === sitio)
     if (!zone) {
       setSelectedFee(0)
       return
     }
-    const isNearSitio = NEAR_SITIOS.includes(sitio)
+
     if (displayTotal >= 1000) {
-      setSelectedFee(0)
-    } else if (isNearSitio && displayTotal >= 500) {
-      setSelectedFee(0)
+      setSelectedFee(0)                    // Free for all at ₱1000+
+    } else if (sitio === 'Cogtong' && displayTotal >= 200) {
+      setSelectedFee(0)                    // Free for Cogtong at ₱200+
+    } else if (displayTotal < 500) {
+      setSelectedFee(0)                    // Block other sitios below ₱500
     } else {
       setSelectedFee(Number(zone.fee))
     }
@@ -291,13 +306,19 @@ Thank you for choosing Joe's Brew!
                         </option>
                       ))}
                     </select>
-                    {sitio && selectedFee === 0 && (
-                      <p className="font-body text-xs text-green-600 mt-1">🎉 Free delivery on this order!</p>
+
+                    {sitio === 'Cogtong' && displayTotal < 200 && (
+                      <p className="font-body text-xs text-amber-600 mt-1">
+                        ⚠️ Minimum ₱200 order required for Cogtong delivery.
+                      </p>
                     )}
-                    {sitio && !['Cogtong', 'Tawid Proper', 'Panas Proper'].includes(sitio) && displayTotal < 500 && (
+                    {sitio && sitio !== 'Cogtong' && displayTotal < 500 && (
                       <p className="font-body text-xs text-amber-600 mt-1">
                         ⚠️ Minimum ₱500 order required for delivery to this Sitio.
                       </p>
+                    )}
+                    {sitio && selectedFee === 0 && displayTotal >= (sitio === 'Cogtong' ? 200 : 500) && (
+                      <p className="font-body text-xs text-green-600 mt-1">🎉 Free delivery on this order!</p>
                     )}
                   </div>
 
