@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
 import FruitBlendCard from './FruitBlendCard'
+import AddonPicker from './AddonPicker'
 
 gsap.registerPlugin(ScrollTrigger)
 
