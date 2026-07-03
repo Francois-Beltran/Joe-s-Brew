@@ -5,6 +5,21 @@ import { validateAdmin } from '../middleware/validateAdmin.js'
 const router = express.Router()
 router.use(express.json())
 
+// ============================================================
+// Fetches all admin contacts; only the one with is_sender=true
+// is used as the FROM/target for SMS notifications sent by the gateway.
+// Other admins are recorded for reference but do not receive SMS directly
+// (the SMS gateway only sends to one number per message in this setup).
+// ============================================================
+async function getSmsAdminPhone() {
+  const { data } = await supabaseAdmin
+    .from('admin_contacts')
+    .select('phone')
+    .eq('is_sender', true)
+    .maybeSingle()
+  return data?.phone || process.env.ADMIN_PHONE_NUMBER // fallback to env var if table is empty
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATION HELPER
 // SMS Gateway: sms-gate.app (Android app)
@@ -128,7 +143,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
     // 🔔 TO CHANGE ADMIN NOTIFICATION: update ADMIN_PHONE_NUMBER in server/.env
     try {
       await sendSMS(
-        process.env.ADMIN_PHONE_NUMBER,
+        await getSmsAdminPhone(),
         toPlainText(
           `✅ Payment Verified\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
@@ -205,7 +220,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
     // Notify admin via SMS
     try {
       await sendSMS(
-        process.env.ADMIN_PHONE_NUMBER,
+        await getSmsAdminPhone(),
         toPlainText(
           `❌ Order Rejected\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
@@ -275,7 +290,7 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
     // Notify admin via SMS
     try {
       await sendSMS(
-        process.env.ADMIN_PHONE_NUMBER,
+        await getSmsAdminPhone(),
         toPlainText(
           `☕ Order Marked Ready\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +

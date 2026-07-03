@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
-import AddonCard from './AddonCard'
+import AddonPicker from './AddonPicker'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger)
 const SWIPE_CATEGORIES = [
   'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
   'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
-  'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+  'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
 ]
 
 function SwipeRow({ items, categoryName }) {
@@ -69,35 +69,6 @@ function GridSection({ items, categoryName }) {
   )
 }
 
-function AddonRow({ items, categoryName }) {
-  return (
-    <div className="mb-10">
-      <h3 className="font-heading text-2xl text-brew-brown mb-2 px-4 md:px-0 tracking-wide">
-        {categoryName.toUpperCase()}
-      </h3>
-      <p className="font-body text-xs text-brew-brown/50 mb-4 px-4 md:px-0">
-        Tap to add to your order
-      </p>
-      {/* Mobile swipe */}
-      <div
-        className="flex md:hidden gap-3 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {items.map(item => (
-          <div key={item.id} className="snap-start">
-            <AddonCard item={item} />
-          </div>
-        ))}
-      </div>
-      {/* Desktop wrap */}
-      <div className="hidden md:flex flex-wrap gap-3">
-        {items.map(item => (
-          <AddonCard key={item.id} item={item} />
-        ))}
-      </div>
-    </div>
-  )
-}
 export default function MenuSection() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -105,10 +76,11 @@ export default function MenuSection() {
 
   useEffect(() => {
     async function fetchMenu() {
+      // Fetch ALL items regardless of availability — unavailable items are still shown
+      // to customers (marked clearly), just not addable to cart. See MenuCard.jsx.
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('is_available', true)
         .order('category')
 
       if (!error) setItems(data ?? [])
@@ -144,7 +116,7 @@ export default function MenuSection() {
   const CATEGORY_ORDER = [
     'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
     'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
-    'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food', 'Add-ons'
+    'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
   ]
 
   const grouped = items.reduce((acc, item) => {
@@ -199,21 +171,36 @@ export default function MenuSection() {
                     {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} />}
                     {creamBase.length > 0 && <SwipeRow categoryName="Frappe — Cream Base" items={creamBase} />}
                     {other.length > 0 && <SwipeRow categoryName="Frappe" items={other} />}
+                    <AddonPicker addonFor="Frappe" />
                   </div>
                 )
               }
 
               const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
-              
-              return isSwipeCategory ? (
-                category === 'Add-ons' ? (
-                  <AddonRow key={category} categoryName={category} items={categoryItems} />
-                ) : (
-                  <SwipeRow key={category} categoryName={category} items={categoryItems} />
+
+              if (category === 'Milk Tea') {
+                return (
+                  <div key={category}>
+                    <SwipeRow categoryName={category} items={categoryItems} />
+                    <AddonPicker addonFor="Milk Tea" />
+                  </div>
                 )
+              }
+
+              if (category === 'Tea Infused Fruit Blend' || category === 'Aqua Infused Fruit Blend') {
+                return (
+                  <div key={category}>
+                    <SwipeRow categoryName={category} items={categoryItems} />
+                    <AddonPicker addonFor="Fruit Blend" />
+                  </div>
+                )
+              }
+
+              return isSwipeCategory ? (
+                <SwipeRow key={category} categoryName={category} items={categoryItems} />
               ) : (
                 <GridSection key={category} categoryName={category} items={categoryItems} />
-              );
+              )
             })}
           </div>
         )}

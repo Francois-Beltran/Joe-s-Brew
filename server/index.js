@@ -3,6 +3,8 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import checkoutRouter from './routes/checkout.js'
 import ordersRouter from './routes/orders.js'
+import shopRouter from './routes/shop.js'
+app.use('/api/shop', shopRouter)
 
 dotenv.config()
 

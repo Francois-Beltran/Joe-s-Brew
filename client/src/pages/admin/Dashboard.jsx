@@ -13,6 +13,17 @@ export default function Dashboard() {
   const [verifying, setVerifying] = useState(null)
   const [lightbox, setLightbox] = useState(null)
   const [actionError, setActionError] = useState('')
+  const [shopOpen, setShopOpen] = useState(true)
+  const [togglingShop, setTogglingShop] = useState(false)
+
+
+  // ============================================================
+  // REVENUE TALLY — sums total_amount of all successfully paid orders
+  // (paid + ready = money actually received). Admin-only visibility.
+  // ============================================================
+  const totalRevenue = orders
+    .filter(o => ['paid', 'ready'].includes(o.status))
+    .reduce((sum, o) => sum + Number(o.total_amount), 0)
 
   const fetchOrders = async () => {
     try {
@@ -34,11 +45,46 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    fetch(`${API_URL}/api/shop/status`).then(r => r.json()).then(d => setShopOpen(d.isOpen))
+  }, [])
+
+  const toggleShop = async () => {
+    setTogglingShop(true)
+    try {
+      const res = await fetch(`${API_URL}/api/shop/toggle`, {
+        method: 'POST',
+        headers: { 'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token') },
+      })
+      const data = await res.json()
+      setShopOpen(data.isOpen)
+    } catch {
+      setActionError('Failed to toggle shop status')
+    } finally {
+      setTogglingShop(false)
+    }
+  }
+
+  useEffect(() => {
     fetchOrders()
+
+    // Ask for browser notification permission once, on first load
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
 
     const channel = supabase
       .channel('admin-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        // 🔔 POP-UP NOTIFICATION — fires whenever a brand new order is inserted
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('New Order Received! ☕', {
+            body: `Order from ${payload.new.customer_name || 'a customer'} — ₱${Number(payload.new.total_amount).toFixed(2)}`,
+            icon: '/images/admin-icon-192.png',
+          })
+        }
+        fetchOrders()
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => fetchOrders())
       .subscribe()
 
     return () => supabase.removeChannel(channel)
@@ -103,22 +149,22 @@ export default function Dashboard() {
     }
   }
 
-const deleteOrder = async (order) => {
-  const confirmPassword = prompt(
-    `To permanently delete order #${order.id.slice(0, 8).toUpperCase()}, please re-enter the admin password:`
-  )
-  if (confirmPassword === null) return
+  const deleteOrder = async (order) => {
+    const confirmPassword = prompt(
+      `To permanently delete order #${order.id.slice(0, 8).toUpperCase()}, please re-enter the admin password:`
+    )
+    if (confirmPassword === null) return
 
-  setActionError('')
-  try {
-    const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-      },
-      body: JSON.stringify({ confirmPassword }),
-    })
+    setActionError('')
+    try {
+      const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
+        },
+        body: JSON.stringify({ confirmPassword }),
+      })
 
       const data = await res.json().catch(() => null)
 
@@ -158,6 +204,34 @@ const deleteOrder = async (order) => {
         <div className="mb-6">
           <h1 className="font-heading text-5xl text-brew-brown">ADMIN DASHBOARD</h1>
           <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Payment verification</p>
+        </div>
+
+        {/* SHOP OPEN/CLOSED TOGGLE — controls whether customers can checkout */}
+        <div className={`mb-6 rounded-2xl p-4 flex items-center justify-between ${shopOpen ? 'bg-green-100' : 'bg-red-100'}`}>
+          <div>
+            <p className="font-heading text-lg text-brew-brown">
+              Shop is currently {shopOpen ? 'OPEN' : 'CLOSED'}
+            </p>
+            <p className="font-body text-xs text-brew-brown/60">
+              {shopOpen ? 'Customers can place orders normally.' : 'Customers can browse but cannot checkout.'}
+            </p>
+          </div>
+          <button
+            onClick={toggleShop}
+            disabled={togglingShop}
+            className={`font-heading text-sm px-5 py-2 rounded-full transition-colors ${shopOpen ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+          >
+            {togglingShop ? '...' : shopOpen ? 'CLOSE SHOP' : 'OPEN SHOP'}
+          </button>
+        </div>
+
+        <div className="mb-6 bg-brew-brown text-brew-beige rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="font-body text-xs text-brew-beige/60 uppercase tracking-widest">Total Revenue</p>
+            <p className="font-heading text-3xl">₱{totalRevenue.toFixed(2)}</p>
+          </div>
+          <span className="text-4xl">💰</span>
         </div>
 
         {actionError && (

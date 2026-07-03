@@ -68,6 +68,17 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: 'Payment screenshot is required' })
     }
 
+    // 🔒 SHOP STATUS CHECK — blocks checkout entirely if admin/employee has closed the shop
+    const { data: shopStatus } = await supabaseAdmin
+      .from('shop_settings')
+      .select('is_open')
+      .eq('id', 1)
+      .single()
+
+    if (!shopStatus?.is_open) {
+      return res.status(403).json({ error: 'Sorry, Joe\'s Brew is currently closed. Please check back later!' })
+    }
+
     if (agreedToTerms !== 'true') {
       return res.status(400).json({ error: 'You must agree to the Terms and Agreement.' })
     }
@@ -118,9 +129,17 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return sum + unitPrice * i.quantity
     }, 0)
 
-    // Delivery fee is server-authoritative — looked up from delivery_zones table, never trusted from client
+    // ============================================================
+    // DELIVERY FEE LOGIC WITH FREE-DELIVERY THRESHOLDS
+    // - Orders ≥ ₱1000: FREE delivery to ANY sitio
+    // - Orders ≥ ₱500 to Cogtong, Tawid Proper, or Panas Proper: FREE delivery
+    // - Orders to OTHER sitios: minimum ₱500 order required to qualify for delivery at all
+    // ============================================================
     let deliveryFee = 0
+
     if (orderType === 'delivery') {
+      const NEAR_SITIOS = ['Cogtong', 'Tawid Proper', 'Panas Proper']
+
       const { data: zone } = await supabaseAdmin
         .from('delivery_zones')
         .select('fee')
@@ -131,8 +150,25 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       if (!zone) {
         return res.status(400).json({ error: 'Invalid or unavailable delivery Sitio' })
       }
-      deliveryFee = Number(zone.fee)
+
+      const isNearSitio = NEAR_SITIOS.includes(sitio)
+
+      // Defensive check: far sitios require a minimum ₱500 order to qualify for delivery
+      if (!isNearSitio && itemsTotal < 500) {
+        return res.status(400).json({
+          error: `Delivery to ${sitio} requires a minimum order of ₱500. Your current order is ₱${itemsTotal.toFixed(2)}.`,
+        })
+      }
+
+      if (itemsTotal >= 1000) {
+        deliveryFee = 0 // Free delivery to any sitio at ₱1000+
+      } else if (isNearSitio && itemsTotal >= 500) {
+        deliveryFee = 0 // Free delivery to near sitios at ₱500+
+      } else {
+        deliveryFee = Number(zone.fee) // Standard fee applies
+      }
     }
+
     const totalAmount = itemsTotal + deliveryFee
 
     // Check for duplicate reference number to prevent fraud

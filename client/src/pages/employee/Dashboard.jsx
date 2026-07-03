@@ -97,7 +97,7 @@ export default function EmployeeDashboard() {
     })
 
     const filteredOrders = orders.filter(o => {
-        if (activeTab === 'pending')   return o.status === 'paid'
+        if (activeTab === 'pending') return o.status === 'paid'
         if (activeTab === 'completed') return o.status === 'ready'
         return true
     })
@@ -108,6 +108,26 @@ export default function EmployeeDashboard() {
                 <div className="mb-6">
                     <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
                     <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Employee fulfillment</p>
+                </div>
+
+                {/* SHOP OPEN/CLOSED TOGGLE — controls whether customers can checkout */}
+                <div className={`mb-6 rounded-2xl p-4 flex items-center justify-between ${shopOpen ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <div>
+                        <p className="font-heading text-lg text-brew-brown">
+                            Shop is currently {shopOpen ? 'OPEN' : 'CLOSED'}
+                        </p>
+                        <p className="font-body text-xs text-brew-brown/60">
+                            {shopOpen ? 'Customers can place orders normally.' : 'Customers can browse but cannot checkout.'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={toggleShop}
+                        disabled={togglingShop}
+                        className={`font-heading text-sm px-5 py-2 rounded-full transition-colors ${shopOpen ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700'
+                            }`}
+                    >
+                        {togglingShop ? '...' : shopOpen ? 'CLOSE SHOP' : 'OPEN SHOP'}
+                    </button>
                 </div>
 
                 {actionError && (
@@ -127,11 +147,10 @@ export default function EmployeeDashboard() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${
-                                        activeTab === tab
+                                    className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
                                             ? 'bg-brew-brown text-brew-beige border-brew-brown'
                                             : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-                                    }`}
+                                        }`}
                                 >
                                     {tab.toUpperCase()}
                                     {tab === 'pending' && (
@@ -160,9 +179,8 @@ export default function EmployeeDashboard() {
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_name}</p>
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
                                             </div>
-                                            <span className={`font-body text-xs px-2 py-0.5 rounded-full ${
-                                                order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                                            }`}>
+                                            <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                                }`}>
                                                 {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
                                             </span>
                                         </div>
@@ -211,22 +229,20 @@ export default function EmployeeDashboard() {
                                 </div>
                                 <div className="bg-white rounded-b-xl shadow-sm overflow-hidden">
                                     {grouped[cat].map((item, idx) => (
-                                        <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${
-                                            idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
-                                        }`}>
+                                        <div key={item.id} className={`flex items-center justify-between px-4 py-3 gap-3 ${idx !== grouped[cat].length - 1 ? 'border-b border-brew-beige/40' : ''
+                                            }`}>
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 {item.best_seller && <span className="text-amber-400 text-xs shrink-0">⭐</span>}
                                                 <p className="font-body font-medium text-brew-brown text-sm truncate">{item.name}</p>
                                             </div>
                                             <button
                                                 onClick={() => toggleAvailability(item)}
-                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${
-                                                    item.is_available
+                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${item.is_available
                                                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
                                                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
-                                                }`}
+                                                    }`}
                                             >
-                                                {item.is_available ? 'AVAILABLE' : 'OUT OF STOCK'}
+                                                {item.is_available ? 'AVAILABLE' : 'UNAVAILABLE'}
                                             </button>
                                         </div>
                                     ))}

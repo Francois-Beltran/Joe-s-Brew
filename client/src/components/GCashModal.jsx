@@ -115,10 +115,24 @@ export default function GCashModal({ onClose, onSuccess }) {
     fetchZones()
   }, [])
 
+  // Mirrors the same free-delivery logic as the backend, for live preview only.
+  // The backend is the final authority — this is just UX so customers see the real total before submitting.
   useEffect(() => {
+    const NEAR_SITIOS = ['Cogtong', 'Tawid Proper', 'Panas Proper']
     const zone = deliveryZones.find(z => z.sitio_name === sitio)
-    setSelectedFee(zone ? Number(zone.fee) : 0)
-  }, [sitio, deliveryZones])
+    if (!zone) {
+      setSelectedFee(0)
+      return
+    }
+    const isNearSitio = NEAR_SITIOS.includes(sitio)
+    if (displayTotal >= 1000) {
+      setSelectedFee(0)
+    } else if (isNearSitio && displayTotal >= 500) {
+      setSelectedFee(0)
+    } else {
+      setSelectedFee(Number(zone.fee))
+    }
+  }, [sitio, deliveryZones, displayTotal])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -215,6 +229,14 @@ export default function GCashModal({ onClose, onSuccess }) {
                         </option>
                       ))}
                     </select>
+                    {sitio && selectedFee === 0 && orderType === 'delivery' && (
+                      <p className="font-body text-xs text-green-600 mt-1">🎉 Free delivery on this order!</p>
+                    )}
+                    {sitio && !['Cogtong', 'Tawid Proper', 'Panas Proper'].includes(sitio) && displayTotal < 500 && (
+                      <p className="font-body text-xs text-amber-600 mt-1">
+                        ⚠️ Minimum ₱500 order required for delivery to this Sitio.
+                      </p>
+                    )}
                   </div>
 
                   <div>

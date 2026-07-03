@@ -51,9 +51,15 @@ export default function MenuCard({ item }) {
     <div className="bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full">
 
       {/* Best Seller badge */}
-      {item.best_seller && (
+      {item.best_seller && item.is_available && (
         <div className="absolute top-3 left-3 z-10 bg-amber-400 text-amber-900 font-heading text-xs tracking-wider px-3 py-1 rounded-full shadow">
           ⭐ BEST SELLER
+        </div>
+      )}
+      {/* UNAVAILABLE badge — item stays visible on menu but cannot be ordered */}
+      {!item.is_available && (
+        <div className="absolute top-3 left-3 z-10 bg-gray-500 text-white font-heading text-xs tracking-wider px-3 py-1 rounded-full shadow">
+          UNAVAILABLE
         </div>
       )}
 
@@ -63,7 +69,8 @@ export default function MenuCard({ item }) {
           <img
             src={item.image_url}
             alt={item.name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-cover transition-transform duration-500 ${item.is_available ? 'hover:scale-105' : 'grayscale opacity-60'
+              }`}
           />
         </div>
       ) : (
@@ -101,8 +108,8 @@ export default function MenuCard({ item }) {
             <button
               onClick={() => setSelectedSize('base')}
               className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'base'
-                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
                 }`}
             >
               {item.size_label_base || 'Medio'}<br />
@@ -112,8 +119,8 @@ export default function MenuCard({ item }) {
               <button
                 onClick={() => setSelectedSize('grande')}
                 className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'grande'
-                    ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                    : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
                   }`}
               >
                 {item.size_label_grande || 'Grande'}<br />
@@ -124,8 +131,8 @@ export default function MenuCard({ item }) {
               <button
                 onClick={() => setSelectedSize('king')}
                 className={`flex-1 py-1.5 rounded-xl font-heading text-xs tracking-wider border-2 transition-colors min-w-[60px] ${selectedSize === 'king'
-                    ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                    : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                  ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                  : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
                   }`}
               >
                 {item.size_label_king || 'King'}<br />
@@ -144,9 +151,10 @@ export default function MenuCard({ item }) {
 
         <button
           onClick={handleAdd}
-          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 transition-all text-sm"
+          disabled={!item.is_available}
+          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
         >
-          {inCart ? `ADD AGAIN (${inCart.quantity} in cart)` : 'ADD TO CART'}
+          {!item.is_available ? 'CURRENTLY UNAVAILABLE' : inCart ? `ADD AGAIN (${inCart.quantity} in cart)` : 'ADD TO CART'}
         </button>
       </div>
     </div>

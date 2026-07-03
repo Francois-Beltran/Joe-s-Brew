@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useCart } from '../hooks/useCart'
+import { useState, useEffect } from 'react'
+import { API_URL } from '../lib/api'
 import GCashModal from './GCashModal'
 
 /**
@@ -16,6 +18,19 @@ export default function Cart({ onClose }) {
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
+  import { useState, useEffect } from 'react'
+  import { API_URL } from '../lib/api'
+
+  // Inside the component, add:
+  const [shopOpen, setShopOpen] = useState(true)
+
+  useEffect(() => {
+    // Check shop status whenever the cart drawer opens
+    fetch(`${API_URL}/api/shop/status`)
+      .then(res => res.json())
+      .then(data => setShopOpen(data.isOpen))
+      .catch(() => setShopOpen(true)) // fail-open so a network hiccup doesn't block orders unnecessarily
+  }, [])
   /**
    * Handles successful payment completion
    * Closes cart and redirects to success page
@@ -85,9 +100,15 @@ export default function Cart({ onClose }) {
                   <span>₱{displayTotal.toFixed(2)}</span>
                 </div>
 
+                {!shopOpen && (
+                  <p className="font-body text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 text-center mb-2">
+                    🔒 We're currently closed. You can still browse, but checkout is disabled until we reopen.
+                  </p>
+                )}
                 <button
                   onClick={() => setShowGCash(true)}
-                  className="w-full bg-[#0070C0] text-white font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-[#005a9e] transition-colors flex items-center justify-center gap-3"
+                  disabled={!shopOpen}
+                  className="w-full bg-[#0070C0] text-white font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-[#005a9e] transition-colors flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <span className="text-2xl">💙</span>
                   PAY WITH GCASH
