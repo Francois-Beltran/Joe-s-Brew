@@ -298,7 +298,7 @@ Thank you for choosing Joe's Brew!
                       <option value="">Select your Sitio</option>
                       {deliveryZones.map(zone => (
                         <option key={zone.sitio_name} value={zone.sitio_name}>
-                          {zone.sitio_name} ({Number(zone.fee) * 100}%)
+                          {zone.sitio_name} ({Number(zone.fee)})
                         </option>
                       ))}
                     </select>
