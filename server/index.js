@@ -4,22 +4,13 @@ import dotenv from 'dotenv'
 import checkoutRouter from './routes/checkout.js'
 import ordersRouter from './routes/orders.js'
 import shopRouter from './routes/shop.js'
-app.use('/api/shop', shopRouter)
+import authRouter from './routes/auth.js'
 
 dotenv.config()
 
-/**
- * Express application for Joe's Brew e-commerce platform
- * Handles checkout processing and order management
- */
 const app = express()
 const PORT = process.env.PORT || 4000
 
-/**
- * CORS configuration
- * Development: allows all origins
- * Production: restrict to allowed origins from environment variable
- */
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
 
 app.use(cors({
@@ -41,20 +32,15 @@ app.use(cors({
   credentials: true,
 }))
 
+app.use(express.json())
+
 // Bypass ngrok's interstitial warning screen for automated bots (like Telegram), harmless in production
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true')
   next()
 })
 
-app.use(express.json())
-
-/**
- * Route handlers
- * Note: Telegram webhook lives at /api/orders/webhook/telegram (see routes/orders.js)
- */
-import authRouter from './routes/auth.js'
-
+app.use('/api/auth', authRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/checkout', checkoutRouter)
 app.use('/api/orders', ordersRouter)
@@ -67,6 +53,7 @@ app.use('/api/orders', ordersRouter)
  * @param {Object} res - Express response object
  * @returns {Object} JSON response with status and shop name
  */
+
 app.get('/health', (_, res) => {
   res.json({ status: 'ok', shop: "Joe's Brew" })
 })
