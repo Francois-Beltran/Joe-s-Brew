@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '../hooks/useCart'
+import { supabase } from '../lib/supabaseClient'
 
 function StarRating({ rating }) {
   const full = Math.floor(rating)
@@ -18,7 +19,9 @@ function StarRating({ rating }) {
 export default function MenuCard({ item }) {
 
   const { addItem, cart } = useCart()
-  // Default to base size
+  const [addons, setAddons] = useState([])
+  const [selectedAddon, setSelectedAddon] = useState(null)
+  
   const hasGrande = item.price_grande != null
   const hasKing = item.price_king != null
   const [selectedSize, setSelectedSize] = useState('base')
@@ -37,7 +40,21 @@ export default function MenuCard({ item }) {
     i.menuItemId === item.id && i.size === selectedSize
   )
 
+  useEffect(() => {
+    async function fetchAddons() {
+      const { data } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('category', 'Add-ons')
+        .eq('addon_for', item.category) 
+        .eq('is_available', true)
+      setAddons(data ?? [])
+    }
+    if (item.category) fetchAddons()
+  }, [item.category])
+
   const handleAdd = () => {
+    // Add the main item
     addItem({
       menuItemId: item.id,
       name: item.name,
@@ -45,6 +62,18 @@ export default function MenuCard({ item }) {
       sizeLabel: sizeLabel,
       displayPrice: displayPrice,
     })
+
+    // Add the add-on if one is selected
+    if (selectedAddon) {
+      addItem({
+        menuItemId: selectedAddon.id,
+        name: `${selectedAddon.name} (for ${item.name})`,
+        size: 'base',
+        sizeLabel: 'Add-on',
+        displayPrice: selectedAddon.price,
+      })
+      setSelectedAddon(null) // Reset selection after adding
+    }
   }
 
   return (
@@ -56,7 +85,7 @@ export default function MenuCard({ item }) {
           ⭐ BEST SELLER
         </div>
       )}
-      {/* UNAVAILABLE badge — item stays visible on menu but cannot be ordered */}
+      {/* UNAVAILABLE badge */}
       {!item.is_available && (
         <div className="absolute top-3 left-3 z-10 bg-gray-500 text-white font-heading text-xs tracking-wider px-3 py-1 rounded-full shadow">
           UNAVAILABLE
@@ -102,7 +131,7 @@ export default function MenuCard({ item }) {
           </p>
         )}
 
-        {/* Size selector — only shown when grande price exists */}
+        {/* Size selector */}
         {(hasGrande || hasKing) && (
           <div className="flex gap-1.5 mb-3 flex-wrap">
             <button
@@ -142,7 +171,28 @@ export default function MenuCard({ item }) {
           </div>
         )}
 
-        {/* Single size label when no grande option */}
+        {/* Add-on Picker */}
+        {addons.length > 0 && (
+          <div className="mb-3">
+            <p className="font-heading text-[10px] text-brew-brown/60 mb-1 tracking-widest">ADD-ONS</p>
+            <div className="flex gap-2 flex-wrap">
+              {addons.map(addon => (
+                <button
+                  key={addon.id}
+                  onClick={() => setSelectedAddon(selectedAddon?.id === addon.id ? null : addon)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-heading border transition-colors ${
+                    selectedAddon?.id === addon.id 
+                    ? 'bg-brew-brown text-brew-beige border-brew-brown' 
+                    : 'bg-brew-beige/50 text-brew-brown border-brew-brown/20 hover:border-brew-brown'
+                  }`}
+                >
+                  {addon.name} (+₱{Number(addon.price).toFixed(0)})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!hasGrande && (
           <p className="font-body text-xs text-brew-brown/50 mb-3">
             {item.size_label_base || 'One Size'}

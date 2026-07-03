@@ -3,7 +3,6 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
-import AddonPicker from './AddonPicker'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -165,7 +164,6 @@ export default function MenuSection() {
                     {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} />}
                     {creamBase.length > 0 && <SwipeRow categoryName="Frappe — Cream Base" items={creamBase} />}
                     {other.length > 0 && <SwipeRow categoryName="Frappe" items={other} />}
-                    <AddonPicker addonFor="Frappe" />
                   </div>
                 )
               }
@@ -176,7 +174,6 @@ export default function MenuSection() {
                 return (
                   <div key={category}>
                     <SwipeRow categoryName={category} items={categoryItems} />
-                    <AddonPicker addonFor="Milk Tea" />
                   </div>
                 )
               }
@@ -185,7 +182,6 @@ export default function MenuSection() {
                 return (
                   <div key={category}>
                     <SwipeRow categoryName={category} items={categoryItems} />
-                    <AddonPicker addonFor="Fruit Blend" />
                   </div>
                 )
               }
