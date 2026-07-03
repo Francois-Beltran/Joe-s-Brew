@@ -44,6 +44,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/checkout', checkoutRouter)
 app.use('/api/orders', ordersRouter)
+app.use('/api/shop', shopRouter)
 
 /**
  * Health check endpoint
