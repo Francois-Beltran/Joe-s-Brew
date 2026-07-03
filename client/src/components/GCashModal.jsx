@@ -21,21 +21,17 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [stage, setStage] = useState('instructions')
   const [result, setResult] = useState(null)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const fileInputRef = useRef(null)
   const [deliveryCoords, setDeliveryCoords] = useState(null)
   const [locationError, setLocationError] = useState('')
+
+  const fileInputRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'RO***A O.'
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
-  const grandTotal = displayTotal + (orderType === 'delivery' ? (displayTotal + selectedFee) : 0);
+  const grandTotal = displayTotal + (orderType === 'delivery' ? Number(selectedFee || 0) : 0)
 
-  // ============================================================
-  // 🔧 PINPOINT LOCATION — uses browser Geolocation API to capture
-  // the customer's exact coordinates for delivery. Optional but
-  // helps riders find hard-to-describe addresses.
-  // ============================================================
   const captureLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Location services are not supported on this device.')
@@ -94,11 +90,6 @@ export default function GCashModal({ onClose, onSuccess }) {
       return
     }
 
-    if (deliveryCoords) {
-      formData.append('deliveryLat', deliveryCoords.lat)
-      formData.append('deliveryLng', deliveryCoords.lng)
-    }
-
     setLoading(true)
     setError('')
 
@@ -107,8 +98,8 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('items', JSON.stringify(
         cart.map(i => ({
           menuItemId: i.menuItemId,
-          actualMenuItemId: i.actualMenuItemId, // only present for Fruit Blend items
-          baseType: i.baseType,                 // only present for Fruit Blend items
+          actualMenuItemId: i.actualMenuItemId,
+          baseType: i.baseType,
           quantity: i.quantity,
           size: i.size || 'base',
         }))
@@ -121,6 +112,11 @@ export default function GCashModal({ onClose, onSuccess }) {
       formData.append('gcashRef', refNumber)
       formData.append('screenshot', screenshot)
       formData.append('agreedToTerms', agreedToTerms.toString())
+
+      if (deliveryCoords) {
+        formData.append('deliveryLat', deliveryCoords.lat)
+        formData.append('deliveryLng', deliveryCoords.lng)
+      }
 
       const res = await fetch(`${API_URL}/api/checkout`, { method: 'POST', body: formData })
       const data = await res.json()
@@ -153,8 +149,6 @@ export default function GCashModal({ onClose, onSuccess }) {
     fetchZones()
   }, [])
 
-  // Mirrors the same free-delivery logic as the backend, for live preview only.
-  // The backend is the final authority — this is just UX so customers see the real total before submitting.
   useEffect(() => {
     const NEAR_SITIOS = ['Cogtong', 'Tawid Proper', 'Panas Proper']
     const zone = deliveryZones.find(z => z.sitio_name === sitio)
@@ -172,11 +166,6 @@ export default function GCashModal({ onClose, onSuccess }) {
     }
   }, [sitio, deliveryZones, displayTotal])
 
-
-  // ============================================================
-  // Generates a simple text receipt the customer can download as proof
-  // of order when claiming their pickup/delivery
-  // ============================================================
   const downloadReceipt = () => {
     const receiptText = `
 JOE'S BREW — ORDER RECEIPT
@@ -207,6 +196,7 @@ Thank you for choosing Joe's Brew!
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-brew-dark/70 backdrop-blur-sm" onClick={onClose} />
@@ -228,7 +218,6 @@ Thank you for choosing Joe's Brew!
             <>
               {/* GCash QR */}
               <div className="bg-white rounded-2xl p-4 flex flex-col items-center border-2 border-dashed border-brew-brown/30">
-                {/* 🖼️ TO CHANGE QR: replace file at client/public/images/gcash-qr.png */}
                 <img
                   src="/images/gcash-qr.jpg"
                   alt="GCash QR Code"
@@ -298,11 +287,11 @@ Thank you for choosing Joe's Brew!
                       <option value="">Select your Sitio</option>
                       {deliveryZones.map(zone => (
                         <option key={zone.sitio_name} value={zone.sitio_name}>
-                          {zone.sitio_name} ({Number(zone.fee)})
+                          {zone.sitio_name} {zone.fee > 0 ? `(+₱${Number(zone.fee)})` : '(Free)'}
                         </option>
                       ))}
                     </select>
-                    {sitio && selectedFee === 0 && orderType === 'delivery' && (
+                    {sitio && selectedFee === 0 && (
                       <p className="font-body text-xs text-green-600 mt-1">🎉 Free delivery on this order!</p>
                     )}
                     {sitio && !['Cogtong', 'Tawid Proper', 'Panas Proper'].includes(sitio) && displayTotal < 500 && (
@@ -490,7 +479,6 @@ Thank you for choosing Joe's Brew!
                   (orderType === 'delivery' && !sitio.trim()) ||
                   !agreedToTerms
                 }
-
                 className="w-full bg-brew-brown text-brew-beige font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-40"
               >
                 {loading ? (
@@ -554,6 +542,6 @@ Thank you for choosing Joe's Brew!
 
         </div>
       </div>
-    </div >
+    </div>
   )
 }
