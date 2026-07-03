@@ -180,7 +180,7 @@ export default function Dashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Secret': import.meta.env.VITE_ADMIN_SECRET,
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
         },
         body: JSON.stringify({ orderId: order.id, reason }),
       })
