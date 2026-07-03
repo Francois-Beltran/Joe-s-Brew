@@ -24,6 +24,9 @@ Terms and Conditions of Service
 
 export default function TermsGate({ children }) {
   const [accepted, setAccepted] = useState(false)
+  const hostname = window.location.hostname
+  const isStaffDomain = hostname.includes('admin') || hostname.includes('employee')
+  if (isStaffDomain) return children
   const [checking, setChecking] = useState(true)
   const [scrolledToEnd, setScrolledToEnd] = useState(false)
 

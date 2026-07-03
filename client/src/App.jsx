@@ -15,6 +15,17 @@ import { useDynamicManifest } from './hooks/useDynamicManifest'
 function AppRoutes() {
   useDynamicManifest() // swaps manifest.json based on current route (customer/admin/employee)
 
+  const hostname = window.location.hostname
+
+  if (hostname.includes('admin') && window.location.pathname === '/') {
+    window.location.replace('/admin')
+    return null
+  }
+  if (hostname.includes('employee') && window.location.pathname === '/') {
+    window.location.replace('/employee')
+    return null
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
