@@ -119,6 +119,7 @@ export default function MenuSection() {
   ]
 
   const grouped = items.reduce((acc, item) => {
+    if (item.category === 'Add-ons') return acc;
     const cat = item.category || 'Other'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(item)
