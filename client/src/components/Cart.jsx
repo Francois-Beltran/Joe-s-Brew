@@ -16,9 +16,6 @@ export default function Cart({ onClose }) {
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
 
-  import { useState, useEffect } from 'react'
-  import { API_URL } from '../lib/api'
-
   // Inside the component, add:
   const [shopOpen, setShopOpen] = useState(true)
 
