@@ -8,7 +8,6 @@ import EmployeeGuard from './components/EmployeeGuard'
 import EmployeeDashboard from './pages/employee/Dashboard'
 import TermsGate from './components/TermsGate'
 import { useDynamicManifest } from './hooks/useDynamicManifest'
-import BugReporter from './components/BugReporter'
 
 // AppRoutes exists as its own component so useDynamicManifest (which needs
 // useLocation) runs INSIDE the BrowserRouter — hooks that read the URL
@@ -46,7 +45,6 @@ function AppRoutes() {
       <CartProvider>
         <BrowserRouter>
           <AppRoutes />
-          <BugReporter /> 
         </BrowserRouter>
       </CartProvider>
     </TermsGate>
