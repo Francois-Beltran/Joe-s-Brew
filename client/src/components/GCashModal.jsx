@@ -134,6 +134,41 @@ export default function GCashModal({ onClose, onSuccess }) {
     }
   }, [sitio, deliveryZones, displayTotal])
 
+
+  // ============================================================
+  // Generates a simple text receipt the customer can download as proof
+  // of order when claiming their pickup/delivery
+  // ============================================================
+  const downloadReceipt = () => {
+    const receiptText = `
+JOE'S BREW — ORDER RECEIPT
+============================
+Order ID: #${result.orderId?.slice(0, 8).toUpperCase()}
+Customer: ${customerName}
+Phone: ${customerPhone}
+Order Type: ${orderType === 'delivery' ? 'Delivery' : 'Pickup'}
+${orderType === 'delivery' ? `Sitio: ${sitio}\nLandmark: ${landmark || 'N/A'}` : ''}
+
+GCash Reference: ${result.gcashRef}
+Total Amount: ₱${Number(result.totalAmount).toFixed(2)}
+
+Status: Payment submitted — pending verification
+Date: ${new Date().toLocaleString('en-PH')}
+============================
+Please present this receipt when claiming your order.
+Thank you for choosing Joe's Brew!
+`.trim()
+
+    const blob = new Blob([receiptText], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `JoesBrew_Receipt_${result.orderId?.slice(0, 8).toUpperCase()}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-brew-dark/70 backdrop-blur-sm" onClick={onClose} />
@@ -431,6 +466,13 @@ export default function GCashModal({ onClose, onSuccess }) {
               <p className="font-body text-brew-brown/60 text-sm">
                 Our staff will verify your payment shortly. You'll receive an SMS on <strong>{customerPhone}</strong> when your order is ready for pickup.
               </p>
+
+              <button
+                onClick={downloadReceipt}
+                className="w-full bg-white border-2 border-brew-brown text-brew-brown font-heading tracking-wider py-3 rounded-xl hover:bg-brew-brown hover:text-brew-beige transition-colors mb-2"
+              >
+                📄 DOWNLOAD RECEIPT
+              </button>
 
               <button
                 onClick={onSuccess}

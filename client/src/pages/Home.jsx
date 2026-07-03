@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar'
 import HeroSection from '../components/HeroSection'
 import MenuSection from '../components/MenuSection'
 import InstallPrompt from '../components/InstallPrompt'
+import BugReporter from '../components/BugReporter'
 import { useState, useEffect } from 'react'
 
 /**
@@ -49,6 +50,7 @@ export default function Home() {
   </button>
 )}
       <InstallPrompt />
+      <BugReporter />
     </main>
   )
 }

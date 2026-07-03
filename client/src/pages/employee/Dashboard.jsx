@@ -10,6 +10,9 @@ export default function EmployeeDashboard() {
     const [fulfilling, setFulfilling] = useState(null)
     const [actionError, setActionError] = useState('')
 
+    const [shopOpen, setShopOpen] = useState(true)
+    const [togglingShop, setTogglingShop] = useState(false)
+
     const fetchOrders = async () => {
         const { data } = await supabase
             .from('orders')
@@ -37,6 +40,29 @@ export default function EmployeeDashboard() {
             .subscribe()
         return () => supabase.removeChannel(channel)
     }, [])
+
+    useEffect(() => {
+        fetch(`${API_URL}/api/shop/status`)
+            .then(r => r.json())
+            .then(d => setShopOpen(d.isOpen))
+            .catch(() => setShopOpen(true))
+    }, [])
+
+    const toggleShop = async () => {
+        setTogglingShop(true)
+        try {
+            const res = await fetch(`${API_URL}/api/shop/toggle`, {
+                method: 'POST',
+                headers: { 'X-Session-Token': sessionStorage.getItem('joesbrew_employee_token') },
+            })
+            const data = await res.json()
+            setShopOpen(data.isOpen)
+        } catch {
+            setActionError('Failed to toggle shop status')
+        } finally {
+            setTogglingShop(false)
+        }
+    }
 
     const markReady = async (order) => {
         setFulfilling(order.id)
@@ -113,7 +139,7 @@ export default function EmployeeDashboard() {
                 {/* SHOP OPEN/CLOSED TOGGLE — controls whether customers can checkout */}
                 <div className={`mb-6 rounded-2xl p-4 flex items-center justify-between ${shopOpen ? 'bg-green-100' : 'bg-red-100'}`}>
                     <div>
-                        <p className="font-heading text-lg text-brew-brown">
+                        <p className="font-heading text-lg text-brew-brown no-underline decoration-none">
                             Shop is currently {shopOpen ? 'OPEN' : 'CLOSED'}
                         </p>
                         <p className="font-body text-xs text-brew-brown/60">
@@ -148,8 +174,8 @@ export default function EmployeeDashboard() {
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
-                                            ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                                            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
+                                        ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                                        : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
                                         }`}
                                 >
                                     {tab.toUpperCase()}
@@ -238,8 +264,8 @@ export default function EmployeeDashboard() {
                                             <button
                                                 onClick={() => toggleAvailability(item)}
                                                 className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${item.is_available
-                                                        ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
-                                                        : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
+                                                    ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
+                                                    : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
                                                     }`}
                                             >
                                                 {item.is_available ? 'AVAILABLE' : 'UNAVAILABLE'}

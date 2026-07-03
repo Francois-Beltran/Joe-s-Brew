@@ -209,7 +209,7 @@ export default function Dashboard() {
         {/* SHOP OPEN/CLOSED TOGGLE — controls whether customers can checkout */}
         <div className={`mb-6 rounded-2xl p-4 flex items-center justify-between ${shopOpen ? 'bg-green-100' : 'bg-red-100'}`}>
           <div>
-            <p className="font-heading text-lg text-brew-brown">
+            <p className="font-heading text-lg text-brew-brown no-underline decoration-none">
               Shop is currently {shopOpen ? 'OPEN' : 'CLOSED'}
             </p>
             <p className="font-body text-xs text-brew-brown/60">
