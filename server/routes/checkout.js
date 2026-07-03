@@ -17,16 +17,6 @@ const upload = multer({
  * POST /api/checkout
  * Processes customer orders with GCash payment verification
  * Validates inputs, checks item availability, uploads receipt screenshot, and creates order
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.body - Request body containing order data
- * @param {string} req.body.items - JSON string of cart items
- * @param {string} req.body.customerPhone - Customer phone number in +63 format
- * @param {string} req.body.gcashRef - 13-digit GCash reference number
- * @param {string} req.body.telegramUsername - Optional Telegram username for notifications
- * @param {Object} req.file - Multer file object for screenshot upload
- * @param {Object} res - Express response object
- * @returns {Object} JSON response with order details or error message
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
   const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms } = req.body
@@ -82,26 +72,29 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     if (agreedToTerms !== 'true') {
       return res.status(400).json({ error: 'You must agree to the Terms and Agreement.' })
     }
-    // Fetch authoritative prices from database
-    const ids = items.map(i => i.menuItemId)
+
+    // ============================================================
+    // SPLIT ITEMS: regular menu items vs Fruit Blend selections
+    // Fruit Blend items carry `baseType` (Aqua/Tea/Seltzer) and
+    // `actualMenuItemId` (the real menu_items.id, since menuItemId
+    // for these is a composite cart key like "uuid_Aqua Infused")
+    // ============================================================
+    const fruitBlendItems = items.filter(i => i.baseType)
+    const regularItems    = items.filter(i => !i.baseType)
+
+    // Fetch authoritative prices for regular menu items
+    const regularIds = regularItems.map(i => i.menuItemId)
 
     const { data: dbItems, error: dbError } = await supabaseAdmin
       .from('menu_items')
       .select('id, name, price, price_grande, price_king, is_available')
-      .in('id', ids)
+      .in('id', regularIds.length > 0 ? regularIds : ['00000000-0000-0000-0000-000000000000'])
 
     if (dbError) {
       return res.status(500).json({ error: 'Failed to fetch menu items', detail: dbError.message })
     }
 
-    if (!dbItems || dbItems.length === 0) {
-      return res.status(500).json({
-        error: 'Failed to fetch menu items',
-        detail: 'No items returned for IDs: ' + ids.join(', '),
-      })
-    }
-
-    if (dbItems.length !== ids.length) {
+    if (regularIds.length > 0 && (!dbItems || dbItems.length !== regularIds.length)) {
       return res.status(400).json({ error: 'One or more items not found' })
     }
 
@@ -113,6 +106,31 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       })
     }
 
+    // Fetch Fruit Blend variant prices (flavor + base type combos actually in the cart)
+    const fruitBlendActualIds = fruitBlendItems.map(i => i.actualMenuItemId)
+    let fruitBlendVariants = []
+    if (fruitBlendActualIds.length > 0) {
+      const { data: variants, error: variantError } = await supabaseAdmin
+        .from('fruit_blend_variants')
+        .select('menu_item_id, base_type, price, price_grande, is_available')
+        .in('menu_item_id', fruitBlendActualIds)
+
+      if (variantError) {
+        return res.status(500).json({ error: 'Failed to fetch fruit blend prices', detail: variantError.message })
+      }
+      fruitBlendVariants = variants
+    }
+
+    // Validate every fruit blend item actually matched a real, available variant
+    for (const i of fruitBlendItems) {
+      const variant = fruitBlendVariants.find(
+        v => v.menu_item_id === i.actualMenuItemId && v.base_type === i.baseType
+      )
+      if (!variant || !variant.is_available) {
+        return res.status(400).json({ error: `Invalid or unavailable fruit blend selection: ${i.baseType}` })
+      }
+    }
+
     // Build price map respecting selected size — server always owns the price
     const priceMap = Object.fromEntries(dbItems.map(i => [i.id, {
       base: i.price,
@@ -120,14 +138,27 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       king: i.price_king ?? i.price_grande ?? i.price,
     }]))
 
-    const itemsTotal = items.reduce((sum, i) => {
+    // Regular items total
+    const regularTotal = regularItems.reduce((sum, i) => {
       const prices = priceMap[i.menuItemId]
+      if (!prices) return sum
       const unitPrice =
         i.size === 'king' ? prices.king :
-          i.size === 'grande' ? prices.grande :
-            prices.base
+        i.size === 'grande' ? prices.grande :
+        prices.base
       return sum + unitPrice * i.quantity
     }, 0)
+
+    // Fruit Blend items total
+    const fruitBlendTotal = fruitBlendItems.reduce((sum, i) => {
+      const variant = fruitBlendVariants.find(
+        v => v.menu_item_id === i.actualMenuItemId && v.base_type === i.baseType
+      )
+      const unitPrice = i.size === 'grande' ? (variant.price_grande ?? variant.price) : variant.price
+      return sum + unitPrice * i.quantity
+    }, 0)
+
+    const itemsTotal = regularTotal + fruitBlendTotal
 
     // ============================================================
     // DELIVERY FEE LOGIC WITH FREE-DELIVERY THRESHOLDS
@@ -153,7 +184,6 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
       const isNearSitio = NEAR_SITIOS.includes(sitio)
 
-      // Defensive check: far sitios require a minimum ₱500 order to qualify for delivery
       if (!isNearSitio && itemsTotal < 500) {
         return res.status(400).json({
           error: `Delivery to ${sitio} requires a minimum order of ₱500. Your current order is ₱${itemsTotal.toFixed(2)}.`,
@@ -161,11 +191,11 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       }
 
       if (itemsTotal >= 1000) {
-        deliveryFee = 0 // Free delivery to any sitio at ₱1000+
+        deliveryFee = 0
       } else if (isNearSitio && itemsTotal >= 500) {
-        deliveryFee = 0 // Free delivery to near sitios at ₱500+
+        deliveryFee = 0
       } else {
-        deliveryFee = Number(zone.fee) // Standard fee applies
+        deliveryFee = Number(zone.fee)
       }
     }
 
@@ -235,18 +265,31 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to save order', detail: orderError.message })
     }
 
-    // Insert order items
-    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(
-      items.map(i => ({
+    // Insert order items — regular items + fruit blend items (using their REAL menu_items id)
+    const orderItemsPayload = [
+      ...regularItems.map(i => ({
         order_id: order.id,
         menu_item_id: i.menuItemId,
         quantity: i.quantity,
         unit_price:
-          i.size === 'king' ? priceMap[i.menuItemId].king :
-            i.size === 'grande' ? priceMap[i.menuItemId].grande :
-              priceMap[i.menuItemId].base,
-      }))
-    )
+          i.size === 'king'   ? priceMap[i.menuItemId].king   :
+          i.size === 'grande' ? priceMap[i.menuItemId].grande :
+                                priceMap[i.menuItemId].base,
+      })),
+      ...fruitBlendItems.map(i => {
+        const variant = fruitBlendVariants.find(
+          v => v.menu_item_id === i.actualMenuItemId && v.base_type === i.baseType
+        )
+        return {
+          order_id: order.id,
+          menu_item_id: i.actualMenuItemId,
+          quantity: i.quantity,
+          unit_price: i.size === 'grande' ? (variant.price_grande ?? variant.price) : variant.price,
+        }
+      }),
+    ]
+
+    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItemsPayload)
 
     if (itemsError) {
       return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })

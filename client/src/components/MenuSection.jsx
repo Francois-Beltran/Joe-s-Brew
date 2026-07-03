@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
+import FruitBlendCard from './FruitBlendCard'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -10,8 +11,7 @@ gsap.registerPlugin(ScrollTrigger)
 // Desktop always shows grid
 const SWIPE_CATEGORIES = [
   'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
-  'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
-  'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
+  'Milk Tea', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
 ]
 
 function SwipeRow({ items, categoryName }) {
@@ -114,8 +114,7 @@ export default function MenuSection() {
   // Group items by category, preserving a sensible order
   const CATEGORY_ORDER = [
     'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
-    'Milk Tea', 'Fruity Seltzer', 'Tea Infused Fruit Blend', 'Aqua Infused Fruit Blend',
-    'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
+    'Milk Tea', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
   ]
 
   const grouped = items.reduce((acc, item) => {
@@ -179,10 +178,27 @@ export default function MenuSection() {
                 )
               }
 
-              if (category === 'Tea Infused Fruit Blend' || category === 'Aqua Infused Fruit Blend') {
+              if (category === 'Fruit Blend') {
                 return (
-                  <div key={category}>
-                    <SwipeRow categoryName={category} items={categoryItems} />
+                  <div key={category} className="mb-10">
+                    <h3 className="font-heading text-2xl text-brew-brown mb-4 px-4 md:px-0 tracking-wide">
+                      FRUIT BLEND
+                    </h3>
+                    <div className="flex md:hidden gap-4 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide">
+                      {categoryItems.map(item => (
+                        <div key={item.id} className="menu-card shrink-0 w-64 snap-start">
+                          <FruitBlendCard item={item} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {categoryItems.map(item => (
+                        <div key={item.id} className="menu-card">
+                          <FruitBlendCard item={item} />
+                        </div>
+                      ))}
+                    </div>
+                    <AddonPicker addonFor="Fruit Blend" />
                   </div>
                 )
               }

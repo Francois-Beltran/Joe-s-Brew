@@ -73,7 +73,13 @@ export default function GCashModal({ onClose, onSuccess }) {
     try {
       const formData = new FormData()
       formData.append('items', JSON.stringify(
-        cart.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity, size: i.size || 'base' }))
+        cart.map(i => ({
+          menuItemId: i.menuItemId,
+          actualMenuItemId: i.actualMenuItemId, // only present for Fruit Blend items
+          baseType: i.baseType,                 // only present for Fruit Blend items
+          quantity: i.quantity,
+          size: i.size || 'base',
+        }))
       ))
       formData.append('customerName', customerName.trim())
       formData.append('customerPhone', customerPhone)
