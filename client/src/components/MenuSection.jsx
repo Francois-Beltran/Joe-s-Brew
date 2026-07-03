@@ -155,12 +155,6 @@ export default function MenuSection() {
             {sortedCategories.map(category => {
               const categoryItems = grouped[category];
 
-              // 1. Handle Add-ons specifically
-              if (category === 'Add-ons') {
-                return <AddonRow key={category} items={categoryItems} categoryName={category} />;
-              }
-
-              // 2. Handle everything else
               if (category === 'Frappe') {
                 const coffeeBase = categoryItems.filter(i => i.subcategory === 'Coffee Base')
                 const creamBase = categoryItems.filter(i => i.subcategory === 'Cream Base')
