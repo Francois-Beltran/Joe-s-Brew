@@ -16,14 +16,65 @@ export default function Dashboard() {
   const [shopOpen, setShopOpen] = useState(true)
   const [togglingShop, setTogglingShop] = useState(false)
 
+  const todayStr = new Date().toDateString()
+
+  const todaysOrders = orders.filter(o => {
+    const orderDate = new Date(o.created_at).toDateString()
+    return orderDate === todayStr && ['paid', 'ready'].includes(o.status)
+  })
 
   // ============================================================
-  // REVENUE TALLY — sums total_amount of all successfully paid orders
-  // (paid + ready = money actually received). Admin-only visibility.
+  // EXPORT TO SPREADSHEET
   // ============================================================
-  const totalRevenue = orders
-    .filter(o => ['paid', 'ready'].includes(o.status))
-    .reduce((sum, o) => sum + Number(o.total_amount), 0)
+  const exportOrdersToCSV = () => {
+    const headers = [
+      'Priority #', 'Order ID', 'Date', 'Time', 'Customer Name', 'Phone',
+      'Order Type', 'Sitio/Address', 'Items', 'GCash Ref', 'Status', 'Total Amount'
+    ]
+
+    const rows = orders.map(o => {
+      const date = new Date(o.created_at)
+      const itemsSummary = o.order_items
+        ?.map(oi => `${oi.quantity}x ${oi.menu_items?.name}`)
+        .join('; ') || ''
+
+      return [
+        o.priority_number,
+        o.id.slice(0, 8).toUpperCase(),
+        date.toLocaleDateString('en-PH'),
+        date.toLocaleTimeString('en-PH'),
+        o.customer_name || '',
+        o.customer_phone || '',
+        o.order_type,
+        o.delivery_address || 'Pickup',
+        itemsSummary,
+        o.gcash_ref || '',
+        o.status,
+        Number(o.total_amount).toFixed(2),
+      ]
+    })
+
+    const todaysRevenue = todaysOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      '',
+      `"Today's Total Revenue (${new Date().toLocaleDateString('en-PH')})","₱${todaysRevenue.toFixed(2)}"`,
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `JoesBrew_Orders_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const totalRevenue = todaysOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
 
   const fetchOrders = async () => {
     try {
@@ -67,7 +118,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOrders()
 
-    // Ask for browser notification permission once, on first load
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -75,7 +125,8 @@ export default function Dashboard() {
     const channel = supabase
       .channel('admin-orders')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-        // 🔔 POP-UP NOTIFICATION — fires whenever a brand new order is inserted
+        console.log('🔔 New order detected:', payload.new)
+
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('New Order Received! ☕', {
             body: `Order from ${payload.new.customer_name || 'a customer'} — ₱${Number(payload.new.total_amount).toFixed(2)}`,
@@ -98,7 +149,7 @@ export default function Dashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'), // or 'joesbrew_employee_token' in Employee Dashboard
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
         },
         body: JSON.stringify({ orderId: order.id }),
       })
@@ -206,10 +257,10 @@ export default function Dashboard() {
           <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Payment verification</p>
         </div>
 
-        {/* SHOP OPEN/CLOSED TOGGLE — controls whether customers can checkout */}
+        {/* SHOP OPEN/CLOSED TOGGLE */}
         <div className={`mb-6 rounded-2xl p-4 flex items-center justify-between ${shopOpen ? 'bg-green-100' : 'bg-red-100'}`}>
           <div>
-            <p className="font-heading text-lg text-brew-brown no-underline decoration-none">
+            <p className="font-heading text-lg text-brew-brown">
               Shop is currently {shopOpen ? 'OPEN' : 'CLOSED'}
             </p>
             <p className="font-body text-xs text-brew-brown/60">
@@ -228,10 +279,18 @@ export default function Dashboard() {
 
         <div className="mb-6 bg-brew-brown text-brew-beige rounded-2xl p-5 flex items-center justify-between">
           <div>
-            <p className="font-body text-xs text-brew-beige/60 uppercase tracking-widest">Total Revenue</p>
+            <p className="font-body text-xs text-brew-beige/60 uppercase tracking-widest">Today's Revenue</p>
             <p className="font-heading text-3xl">₱{totalRevenue.toFixed(2)}</p>
           </div>
-          <span className="text-4xl">💰</span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-4xl">💰</span>
+            <button
+              onClick={exportOrdersToCSV}
+              className="bg-brew-beige text-brew-brown font-heading text-xs px-4 py-2 rounded-full hover:bg-white transition-colors whitespace-nowrap"
+            >
+              📊 EXPORT TO SHEET
+            </button>
+          </div>
         </div>
 
         {actionError && (
@@ -277,7 +336,6 @@ export default function Dashboard() {
             {filteredOrders.map(order => (
               <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
 
-                {/* Delete button */}
                 <div className="flex justify-end mb-1">
                   <button
                     onClick={() => deleteOrder(order)}
@@ -287,11 +345,10 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {/* Order header */}
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-heading text-brew-brown text-lg">
-                      #{order.id.slice(0, 8).toUpperCase()}
+                      #{order.priority_number} <span className="text-xs text-brew-brown/40">({order.id.slice(0, 8).toUpperCase()})</span>
                     </p>
                     <p className="font-body text-xs text-brew-brown/50">{order.customer_name || order.customer_phone}</p>
                     <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>
@@ -304,10 +361,8 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Order type + delivery info */}
                 <div className="flex items-center gap-2 mb-3">
-                  <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                    }`}>
+                  <span className={`font-body text-xs px-2 py-0.5 rounded-full ${order.order_type === 'delivery' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                     {order.order_type === 'delivery' ? '🛵 Delivery' : '🏪 Pickup'}
                   </span>
                   {order.order_type === 'delivery' && order.delivery_fee > 0 && (
@@ -318,19 +373,27 @@ export default function Dashboard() {
                 </div>
 
                 {order.order_type === 'delivery' && order.delivery_address && (
-                  <p className="font-body text-xs text-brew-brown/70 bg-brew-beige/50 rounded-lg px-3 py-2 mb-3">
-                    📍 {order.delivery_address}
-                  </p>
+                  <div className="bg-brew-beige/50 rounded-lg px-3 py-2 mb-3">
+                    <p className="font-body text-xs text-brew-brown/70">📍 {order.delivery_address}</p>
+                    {order.delivery_lat && order.delivery_lng && (
+                      <a
+                        href={`https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-body text-xs text-blue-600 underline mt-1 inline-block"
+                      >
+                        🗺️ Open exact pinned location in Google Maps
+                      </a>
+                    )}
+                  </div>
                 )}
 
-                {/* Rejection reason */}
                 {order.status === 'rejected' && order.rejection_reason && (
                   <p className="font-body text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
                     Reason: {order.rejection_reason}
                   </p>
                 )}
 
-                {/* Items */}
                 <ul className="mb-3 space-y-1">
                   {order.order_items?.map((oi, i) => (
                     <li key={i} className="font-body text-sm text-brew-brown/80 flex justify-between">
@@ -340,7 +403,6 @@ export default function Dashboard() {
                   ))}
                 </ul>
 
-                {/* GCash info */}
                 <div className="bg-brew-beige/50 rounded-xl p-3 mb-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-body text-xs text-brew-brown/60">GCash Ref</span>
@@ -360,7 +422,6 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Action buttons — verify/reject only, fulfillment moved to Employee Dashboard */}
                 <div className="flex gap-2">
                   {['pending', 'unverified'].includes(order.status) && (
                     <>

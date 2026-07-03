@@ -199,8 +199,9 @@ export default function EmployeeDashboard() {
                                     <div key={order.id} className="bg-white rounded-2xl p-5 shadow-md">
                                         <div className="flex items-start justify-between mb-2">
                                             <div>
+                                                {/* 🔢 PRIORITY NUMBER — shows queue order, auto-assigned by database */}
                                                 <p className="font-heading text-brew-brown text-lg">
-                                                    #{order.id.slice(0, 8).toUpperCase()}
+                                                    #{order.priority_number} <span className="text-xs text-brew-brown/40">({order.id.slice(0, 8).toUpperCase()})</span>
                                                 </p>
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_name}</p>
                                                 <p className="font-body text-xs text-brew-brown/50">{order.customer_phone}</p>

@@ -22,12 +22,39 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [result, setResult] = useState(null)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const fileInputRef = useRef(null)
+  const [deliveryCoords, setDeliveryCoords] = useState(null)
+  const [locationError, setLocationError] = useState('')
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'RO***A O.'
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
   const grandTotal = displayTotal + (orderType === 'delivery' ? Math.round(displayTotal * selectedFee) : 0);
+
+  // ============================================================
+  // 🔧 PINPOINT LOCATION — uses browser Geolocation API to capture
+  // the customer's exact coordinates for delivery. Optional but
+  // helps riders find hard-to-describe addresses.
+  // ============================================================
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Location services are not supported on this device.')
+      return
+    }
+
+    setLocationError('')
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setDeliveryCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        })
+      },
+      (error) => {
+        setLocationError('Could not get your location. Please enable location permissions.')
+      }
+    )
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
@@ -65,6 +92,11 @@ export default function GCashModal({ onClose, onSuccess }) {
     if (!agreedToTerms) {
       setError('You must agree to the Terms and Agreement before placing your order.')
       return
+    }
+
+    if (deliveryCoords) {
+      formData.append('deliveryLat', deliveryCoords.lat)
+      formData.append('deliveryLng', deliveryCoords.lng)
     }
 
     setLoading(true)
@@ -294,6 +326,37 @@ Thank you for choosing Joe's Brew!
                   </div>
                 </>
               )}
+
+              <div>
+                <label className="font-body text-sm text-brew-brown/70 mb-1 block">
+                  Pinpoint Location <span className="text-brew-brown/40 text-xs">(optional, helps our rider find you)</span>
+                </label>
+                {deliveryCoords ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                    <p className="font-body text-xs text-green-700">
+                      📍 Location captured ({deliveryCoords.lat.toFixed(5)}, {deliveryCoords.lng.toFixed(5)})
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryCoords(null)}
+                      className="text-green-600 text-xs underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={captureLocation}
+                    className="w-full border-2 border-dashed border-brew-brown/40 rounded-xl py-3 font-body text-sm text-brew-brown hover:border-brew-brown transition-colors"
+                  >
+                    📍 Use My Current Location
+                  </button>
+                )}
+                {locationError && (
+                  <p className="font-body text-xs text-red-600 mt-1">{locationError}</p>
+                )}
+              </div>
 
               {/* Customer Name */}
               <div>

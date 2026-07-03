@@ -19,7 +19,7 @@ const upload = multer({
  * Validates inputs, checks item availability, uploads receipt screenshot, and creates order
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms, deliveryLat, deliveryLng } = req.body
   const screenshotFile = req.file
 
   try {
@@ -80,7 +80,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     // for these is a composite cart key like "uuid_Aqua Infused")
     // ============================================================
     const fruitBlendItems = items.filter(i => i.baseType)
-    const regularItems    = items.filter(i => !i.baseType)
+    const regularItems = items.filter(i => !i.baseType)
 
     // Fetch authoritative prices for regular menu items
     const regularIds = regularItems.map(i => i.menuItemId)
@@ -144,8 +144,8 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       if (!prices) return sum
       const unitPrice =
         i.size === 'king' ? prices.king :
-        i.size === 'grande' ? prices.grande :
-        prices.base
+          i.size === 'grande' ? prices.grande :
+            prices.base
       return sum + unitPrice * i.quantity
     }, 0)
 
@@ -160,17 +160,10 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     const itemsTotal = regularTotal + fruitBlendTotal
 
-    // ============================================================
-    // DELIVERY FEE LOGIC WITH FREE-DELIVERY THRESHOLDS
-    // - Orders ≥ ₱1000: FREE delivery to ANY sitio
-    // - Orders ≥ ₱500 to Cogtong, Tawid Proper, or Panas Proper: FREE delivery
-    // - Orders to OTHER sitios: minimum ₱500 order required to qualify for delivery at all
-    // ============================================================
+
     let deliveryFee = 0
 
     if (orderType === 'delivery') {
-      const NEAR_SITIOS = ['Cogtong', 'Tawid Proper', 'Panas Proper']
-
       const { data: zone } = await supabaseAdmin
         .from('delivery_zones')
         .select('fee')
@@ -182,20 +175,29 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         return res.status(400).json({ error: 'Invalid or unavailable delivery Sitio' })
       }
 
-      const isNearSitio = NEAR_SITIOS.includes(sitio)
+      const isCogtong = sitio === 'Cogtong'
 
-      if (!isNearSitio && itemsTotal < 500) {
+      // 🔧 Cogtong-specific minimum order rule (₱200)
+      if (isCogtong && itemsTotal < 200) {
+        return res.status(400).json({
+          error: `Delivery to Cogtong requires a minimum order of ₱200. Your current order is ₱${itemsTotal.toFixed(2)}.`,
+        })
+      }
+
+      // 🔧 All other sitios' minimum order rule (₱500)
+      if (!isCogtong && itemsTotal < 500) {
         return res.status(400).json({
           error: `Delivery to ${sitio} requires a minimum order of ₱500. Your current order is ₱${itemsTotal.toFixed(2)}.`,
         })
       }
 
+      // 🔧 Universal free-delivery threshold — any sitio, ₱1000+ order
       if (itemsTotal >= 1000) {
         deliveryFee = 0
-      } else if (isNearSitio && itemsTotal >= 500) {
-        deliveryFee = 0
+      } else if (isCogtong) {
+        deliveryFee = 0 // Cogtong is always free once the ₱200 minimum is met
       } else {
-        deliveryFee = Number(zone.fee)
+        deliveryFee = Number(zone.fee) // Flat fee from delivery_zones table
       }
     }
 
@@ -257,6 +259,8 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         delivery_address: orderType === 'delivery'
           ? `Sitio: ${sitio.trim()}${landmark?.trim() ? ' | Landmark: ' + landmark.trim() : ''}`
           : null,
+        delivery_lat: orderType === 'delivery' && deliveryLat ? Number(deliveryLat) : null,
+        delivery_lng: orderType === 'delivery' && deliveryLng ? Number(deliveryLng) : null,
       })
       .select()
       .single()
@@ -272,9 +276,9 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         menu_item_id: i.menuItemId,
         quantity: i.quantity,
         unit_price:
-          i.size === 'king'   ? priceMap[i.menuItemId].king   :
-          i.size === 'grande' ? priceMap[i.menuItemId].grande :
-                                priceMap[i.menuItemId].base,
+          i.size === 'king' ? priceMap[i.menuItemId].king :
+            i.size === 'grande' ? priceMap[i.menuItemId].grande :
+              priceMap[i.menuItemId].base,
       })),
       ...fruitBlendItems.map(i => {
         const variant = fruitBlendVariants.find(
