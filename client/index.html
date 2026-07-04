@@ -1,26 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Joe's Brew</title>
-  <link rel="manifest" href="/manifest.json" />
+
+  <script>
+    (function () {
+      const path = window.location.pathname;
+      let manifestFile = '/manifest.json';
+      let iconFile = '/images/icon-192.png';
+
+      if (path.startsWith('/admin')) {
+        manifestFile = '/manifest-admin.json';
+        iconFile = '/images/admin-icon-192.png';
+      } else if (path.startsWith('/employee')) {
+        manifestFile = '/manifest-employee.json';
+        iconFile = '/images/employee-icon-192.png';
+      }
+
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = manifestFile;
+      document.head.appendChild(manifestLink);
+
+      const appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      appleIcon.href = iconFile;
+      document.head.appendChild(appleIcon);
+    })();
+  </script>
+
   <meta name="theme-color" content="#4A2511" />
-  <link rel="apple-touch-icon" href="/images/icon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Joe's Brew" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
-
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
-
 </html>
