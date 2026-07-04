@@ -31,7 +31,7 @@
   "screenshots": [
     {
       "src": "/images/screenshot-admin-mobile.jpg",
-      "sizes": "1080x2460",
+      "sizes": "900x2050",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "Joe's Brew Admin Payment Dashboard"
