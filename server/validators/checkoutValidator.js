@@ -1,6 +1,6 @@
-export const validateCheckout = (data) => {
-  const { itemsRaw, customerName, gcashRef, customerPhone, orderType, 
-          sitio, agreedToTerms, screenshotFile } = data;
+export const validateCheckout = (body, screenshotFile) => {
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, 
+          orderType, sitio, agreedToTerms } = body;
 
   let items;
   try {
@@ -41,5 +41,9 @@ export const validateCheckout = (data) => {
     return { success: false, error: 'You must agree to the Terms and Agreement.' };
   }
 
-  return { success: true, items };
+  return { 
+    success: true, 
+    items,
+    data: { items, customerName, gcashRef, customerPhone, orderType, sitio, agreedToTerms }
+  };
 };

@@ -9,14 +9,18 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Only images allowed'), false);
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
   }
 });
 
 router.post('/', upload.single('screenshot'), async (req, res) => {
   try {
     const validation = validateCheckout(req.body, req.file);
+
     if (!validation.success) {
       return res.status(400).json({ error: validation.error });
     }
@@ -33,7 +37,10 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     });
   } catch (error) {
     console.error('Checkout Error:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      message: error.message 
+    });
   }
 });
 
