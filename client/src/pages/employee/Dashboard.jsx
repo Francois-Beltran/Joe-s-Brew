@@ -145,6 +145,7 @@ export default function EmployeeDashboard() {
     })
 
     return (
+      <>
         <div className="min-h-screen bg-brew-beige p-6">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6">
@@ -319,5 +320,6 @@ export default function EmployeeDashboard() {
             </div>
         </div>
         <InstallPrompt context="employee" />
+      </>
     )
 }

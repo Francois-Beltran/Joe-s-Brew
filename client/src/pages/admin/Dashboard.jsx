@@ -267,6 +267,7 @@ export default function Dashboard() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-brew-beige p-6">
       <div className="max-w-3xl mx-auto">
 
@@ -527,5 +528,6 @@ export default function Dashboard() {
       )}
     </div>
     <InstallPrompt context="admin" />
+    </>
   )
 }
