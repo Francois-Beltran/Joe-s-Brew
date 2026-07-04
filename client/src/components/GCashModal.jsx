@@ -20,6 +20,7 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [error, setError] = useState('')
   const [stage, setStage] = useState('instructions')
   const [result, setResult] = useState(null)
+  const [cartSnapshot, setCartSnapshot] = useState([])
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [deliveryCoords, setDeliveryCoords] = useState(null)
   const [locationError, setLocationError] = useState('')
@@ -139,6 +140,7 @@ export default function GCashModal({ onClose, onSuccess }) {
         return
       }
 
+      setCartSnapshot([...cart])
       setResult(data)
       setStage('done')
       clearCart()
@@ -180,6 +182,13 @@ export default function GCashModal({ onClose, onSuccess }) {
   }, [sitio, deliveryZones, displayTotal])
 
   const downloadReceipt = () => {
+    const itemLines = cartSnapshot.map(item => {
+      const sizeDisplay = item.sizeLabel && item.sizeLabel !== 'One Size' && item.sizeLabel !== 'Add-on'
+        ? ` (${item.sizeLabel})` : ''
+      const prefix = item.sizeLabel === 'Add-on' ? '  + ' : ''
+      return `${prefix}${item.quantity}x ${item.name}${sizeDisplay} — ₱${(item.displayPrice * item.quantity).toFixed(2)}`
+    }).join('\n')
+
     const receiptText = `
 JOE'S BREW — ORDER RECEIPT
 ============================
@@ -188,6 +197,9 @@ Customer: ${customerName}
 Phone: ${customerPhone}
 Order Type: ${orderType === 'delivery' ? 'Delivery' : 'Pickup'}
 ${orderType === 'delivery' ? `Sitio: ${sitio}\nLandmark: ${landmark || 'N/A'}` : ''}
+
+ITEMS ORDERED:
+${itemLines}
 
 GCash Reference: ${result.gcashRef}
 Total Amount: ₱${Number(result.totalAmount).toFixed(2)}
@@ -516,23 +528,51 @@ Thank you for choosing Joe's Brew!
               <div className="text-6xl">✅</div>
               <h3 className="font-heading text-2xl text-brew-brown">ORDER RECEIVED!</h3>
 
-              <div className="bg-white rounded-2xl p-5 w-full border border-brew-brown/20 space-y-3">
-                <div>
+              <div className="bg-white rounded-2xl p-5 w-full border border-brew-brown/20 space-y-3 text-left">
+                <div className="text-center">
                   <p className="font-body text-xs text-brew-brown/50 mb-1">Order ID</p>
                   <p className="font-heading text-lg text-brew-brown tracking-widest">
                     #{result.orderId?.slice(0, 8).toUpperCase()}
                   </p>
                 </div>
                 <hr className="border-brew-brown/10" />
+
+                {/* Itemized order list */}
                 <div>
+                  <p className="font-body text-xs text-brew-brown/50 mb-2 uppercase tracking-widest">Items Ordered</p>
+                  <ul className="space-y-1">
+                    {cartSnapshot.map((item, i) => {
+                      const isAddon = item.sizeLabel === 'Add-on'
+                      const sizeDisplay = item.sizeLabel && item.sizeLabel !== 'One Size' && item.sizeLabel !== 'Add-on'
+                        ? ` · ${item.sizeLabel}` : ''
+                      return (
+                        <li key={i} className={`flex justify-between font-body ${isAddon ? 'pl-3 text-xs text-brew-brown/50' : 'text-sm text-brew-brown/80'}`}>
+                          <span>
+                            {isAddon ? '↳ ' : ''}{item.quantity}× {item.name}{sizeDisplay}
+                          </span>
+                          <span>₱{(item.displayPrice * item.quantity).toFixed(2)}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {orderType === 'delivery' && Number(grandTotal) > cartSnapshot.reduce((s, i) => s + i.displayPrice * i.quantity, 0) && (
+                    <div className="flex justify-between font-body text-sm text-brew-brown/60 mt-1 pt-1 border-t border-brew-brown/10">
+                      <span>Delivery fee</span>
+                      <span>₱{(grandTotal - cartSnapshot.reduce((s, i) => s + i.displayPrice * i.quantity, 0)).toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-brew-brown/10" />
+                <div className="text-center">
                   <p className="font-body text-xs text-brew-brown/50 mb-1">GCash Reference Number</p>
                   <p className="font-heading text-2xl text-brew-brown tracking-widest">
                     {result.gcashRef}
                   </p>
                 </div>
                 <hr className="border-brew-brown/10" />
-                <div>
-                  <p className="font-body text-xs text-brew-brown/50 mb-1">Amount</p>
+                <div className="text-center">
+                  <p className="font-body text-xs text-brew-brown/50 mb-1">Total Amount</p>
                   <p className="font-heading text-xl text-brew-brown">
                     ₱{Number(result.totalAmount).toFixed(2)}
                   </p>

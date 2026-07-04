@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [actionError, setActionError] = useState('')
   const [shopOpen, setShopOpen] = useState(true)
   const [togglingShop, setTogglingShop] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   const todayStr = new Date().toDateString()
 
@@ -39,7 +40,8 @@ export default function Dashboard() {
         ?.map(oi => {
           const isAddon = oi.menu_items?.category === 'Add-ons'
           const sizeTag = !isAddon && oi.size && oi.size !== 'base' ? ` (${SIZE_LABEL_CSV[oi.size] ?? oi.size})` : ''
-          return `${oi.quantity}x ${oi.menu_items?.name}${sizeTag}`
+          const baseTag = oi.base_type ? ` [${oi.base_type}]` : ''
+          return `${oi.quantity}x ${oi.menu_items?.name}${baseTag}${sizeTag}`
         })
         .join('; ') || ''
 
@@ -87,7 +89,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(quantity, unit_price, size, menu_items(name, category))')
+        .select('*, order_items(quantity, unit_price, size, base_type, menu_items(name, category))')
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -237,6 +239,34 @@ export default function Dashboard() {
     }
   }
 
+  const deleteAllOrders = async () => {
+    const confirmPassword = prompt('Enter admin password to DELETE ALL ORDERS and reset priority counter:')
+    if (confirmPassword === null) return
+
+    setDeletingAll(true)
+    setActionError('')
+    try {
+      const res = await fetch(`${API_URL}/api/orders`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
+        },
+        body: JSON.stringify({ confirmPassword }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setActionError(data?.error || `Failed to delete all orders (status ${res.status})`)
+        return
+      }
+      fetchOrders()
+    } catch (error) {
+      setActionError('Network error: ' + error.message)
+    } finally {
+      setDeletingAll(false)
+    }
+  }
+
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'unverified') return ['pending', 'unverified'].includes(o.status)
     if (activeTab === 'paid') return o.status === 'paid'
@@ -314,9 +344,16 @@ export default function Dashboard() {
           <h2 className="font-heading text-2xl text-brew-brown tracking-wide">ORDERS</h2>
           <button
             onClick={fetchOrders}
-            className="ml-auto font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors"
+            className="font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors"
           >
             ↻ REFRESH
+          </button>
+          <button
+            onClick={deleteAllOrders}
+            disabled={deletingAll || orders.length === 0}
+            className="ml-auto font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-red-300 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {deletingAll ? '...' : '🗑 DELETE ALL'}
           </button>
           {['unverified', 'paid', 'rejected', 'all'].map(tab => (
             <button
@@ -413,11 +450,14 @@ export default function Dashboard() {
                     const sizeTag = !isAddon && oi.size && oi.size !== 'base'
                       ? ` · ${SIZE_LABEL[oi.size] ?? oi.size}`
                       : ''
+                    const baseTag = oi.base_type ? ` · ${oi.base_type}` : ''
                     return (
                       <li key={i} className={`font-body text-sm flex justify-between ${isAddon ? 'pl-4 text-brew-brown/50 text-xs' : 'text-brew-brown/80'}`}>
                         <span>
                           {isAddon ? '↳ ' : ''}{oi.quantity}× {oi.menu_items?.name}
-                          {sizeTag && <span className="text-brew-brown/40">{sizeTag}</span>}
+                          {(baseTag || sizeTag) && (
+                            <span className="text-brew-brown/40">{baseTag}{sizeTag}</span>
+                          )}
                         </span>
                         <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
                       </li>

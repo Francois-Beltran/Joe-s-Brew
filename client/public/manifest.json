@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Joe's Brew",
   "short_name": "Joe's Brew",
   "description": "Brewing the perfect cup, every time.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#D5BC9E",
   "theme_color": "#4A2511",

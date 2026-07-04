@@ -1,13 +1,26 @@
 {
+  "id": "/admin",
   "name": "Joe's Brew Admin",
   "short_name": "Brew Admin",
   "description": "Joe's Brew — Payment verification dashboard",
   "start_url": "/admin",
+  "scope": "/admin",
   "display": "standalone",
   "background_color": "#D5BC9E",
   "theme_color": "#4A2511",
+  "orientation": "portrait",
   "icons": [
-    { "src": "/images/admin-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/images/admin-icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/images/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

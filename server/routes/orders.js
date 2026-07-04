@@ -327,6 +327,56 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
 })
 
 /**
+ * DELETE /api/orders
+ * Admin endpoint to delete ALL orders and reset priority counter to 1.
+ * Requires this one-time Supabase SQL function (run once in SQL Editor):
+ *   CREATE OR REPLACE FUNCTION reset_priority_sequence()
+ *   RETURNS void AS $$
+ *   BEGIN
+ *     PERFORM setval(pg_get_serial_sequence('orders', 'priority_number'), 1, false);
+ *   END;
+ *   $$ LANGUAGE plpgsql SECURITY DEFINER;
+ */
+router.delete('/', validateAdmin, async (req, res) => {
+  try {
+    const { confirmPassword } = req.body
+    if (confirmPassword !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Incorrect password. Deletion cancelled.' })
+    }
+
+    // Delete order_items first (foreign key dependency)
+    const { error: itemsError } = await supabaseAdmin
+      .from('order_items')
+      .delete()
+      .not('order_id', 'is', null)
+
+    if (itemsError) {
+      return res.status(500).json({ error: 'Failed to clear order items', detail: itemsError.message })
+    }
+
+    const { error: ordersError } = await supabaseAdmin
+      .from('orders')
+      .delete()
+      .not('id', 'is', null)
+
+    if (ordersError) {
+      return res.status(500).json({ error: 'Failed to clear orders', detail: ordersError.message })
+    }
+
+    // Reset priority_number sequence so next order starts at #1
+    try {
+      await supabaseAdmin.rpc('reset_priority_sequence')
+    } catch {
+      console.warn('Priority sequence reset skipped — create reset_priority_sequence() in Supabase SQL Editor')
+    }
+
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error', detail: error.message })
+  }
+})
+
+/**
  * DELETE /api/orders/:orderId
  * Admin endpoint to permanently delete an order (cleanup old/test data)
  */

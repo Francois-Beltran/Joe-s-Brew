@@ -1,13 +1,26 @@
 {
+  "id": "/employee",
   "name": "Joe's Brew Orders",
   "short_name": "Brew Orders",
   "description": "Joe's Brew — Order fulfillment dashboard",
   "start_url": "/employee",
+  "scope": "/employee",
   "display": "standalone",
   "background_color": "#D5BC9E",
   "theme_color": "#4A2511",
+  "orientation": "portrait",
   "icons": [
-    { "src": "/images/employee-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/images/employee-icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/images/employee-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/employee-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

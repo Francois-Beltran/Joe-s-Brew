@@ -83,18 +83,20 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     const regularItems = items.filter(i => !i.baseType)
 
     // Fetch authoritative prices for regular menu items
-    const regularIds = regularItems.map(i => i.menuItemId)
+    // Deduplicate IDs: the same item can appear multiple times (different sizes, add-ons)
+    // and Supabase's .in() deduplicates internally — causing a length mismatch → 400.
+    const uniqueRegularIds = [...new Set(regularItems.map(i => i.menuItemId))]
 
     const { data: dbItems, error: dbError } = await supabaseAdmin
       .from('menu_items')
       .select('id, name, price, price_grande, price_king, is_available')
-      .in('id', regularIds.length > 0 ? regularIds : ['00000000-0000-0000-0000-000000000000'])
+      .in('id', uniqueRegularIds.length > 0 ? uniqueRegularIds : ['00000000-0000-0000-0000-000000000000'])
 
     if (dbError) {
       return res.status(500).json({ error: 'Failed to fetch menu items', detail: dbError.message })
     }
 
-    if (regularIds.length > 0 && (!dbItems || dbItems.length !== regularIds.length)) {
+    if (uniqueRegularIds.length > 0 && (!dbItems || dbItems.length !== uniqueRegularIds.length)) {
       return res.status(400).json({ error: 'One or more items not found' })
     }
 
@@ -290,6 +292,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
           menu_item_id: i.actualMenuItemId,
           quantity: i.quantity,
           size: i.size || 'base',
+          base_type: i.baseType,
           unit_price: i.size === 'grande' ? (variant.price_grande ?? variant.price) : variant.price,
         }
       }),

@@ -18,7 +18,7 @@ export default function EmployeeDashboard() {
     const fetchOrders = async () => {
         const { data } = await supabase
             .from('orders')
-            .select('*, order_items(quantity, unit_price, size, menu_items(name, category))')
+            .select('*, order_items(quantity, unit_price, size, base_type, menu_items(name, category))')
             .in('status', ['paid', 'ready'])
             .order('created_at', { ascending: true })
         setOrders(data ?? [])
@@ -247,11 +247,14 @@ export default function EmployeeDashboard() {
                                                 const sizeTag = !isAddon && oi.size && oi.size !== 'base'
                                                     ? ` · ${SIZE_LABEL[oi.size] ?? oi.size}`
                                                     : ''
+                                                const baseTag = oi.base_type ? ` · ${oi.base_type}` : ''
                                                 return (
                                                     <li key={i} className={`font-body flex justify-between ${isAddon ? 'pl-4 text-brew-brown/50 text-xs' : 'text-sm text-brew-brown/80'}`}>
                                                         <span>
                                                             {isAddon ? '↳ ' : ''}{oi.quantity}× {oi.menu_items?.name}
-                                                            {sizeTag && <span className="text-brew-brown/40">{sizeTag}</span>}
+                                                            {(baseTag || sizeTag) && (
+                                                                <span className="text-brew-brown/40">{baseTag}{sizeTag}</span>
+                                                            )}
                                                         </span>
                                                         <span>₱{(oi.unit_price * oi.quantity).toFixed(2)}</span>
                                                     </li>
