@@ -1,54 +1,52 @@
-import { useState } from 'react'
-import { useGCashModal } from './useGCashModal'
-import GCashQR from './GCashQR'
-import OrderTypeSelector from './OrderTypeSelector'
-import DeliveryForm from './DeliveryForm'
-import CustomerForm from './CustomerForm'
-import PaymentForm from './PaymentForm'
-import Receipt from './Receipt'
+import { useState } from 'react';
+import { useGCashModal } from './useGCashModal';
+import GCashQR from './GCashQR';
+import OrderTypeSelector from './OrderTypeSelector';
+import DeliveryForm from './DeliveryForm';
+import CustomerForm from './CustomerForm';
+import PaymentForm from './PaymentForm';
+import Receipt from './Receipt';
 
-export default function GCashModal({ onClose, onSuccess }) {
-  const [stage, setStage] = useState('instructions')
+export default function GCashModal({ 
+  onClose, 
+  onSuccess, 
+  cartTotal = 0   // ← Important: Pass real cart total here
+}) {
+  const [stage, setStage] = useState('instructions');
 
-  // Destructure the hook result
   const {
     formState,
-    setFormState, // Ensure your hook provides this!
-    grandTotal = 0, // Provide default value for safety
+    setFormState,
+    grandTotal,
     error,
     loading,
     handleSubmit,
     downloadReceipt,
-  } = useGCashModal({ onSuccess, setStage })
+    deliveryZones,
+  } = useGCashModal({ 
+    onSuccess, 
+    setStage, 
+    cartTotal   // ← Pass it to the hook
+  });
 
-  // Front-end Form Validation Logic (All fields strictly required)
   const isFormValid = () => {
     const hasAgreed = !!formState?.agreedToTerms;
     const hasName = !!formState?.customerName?.trim();
-    
-    // Validate Phone Number (Must clean to exactly 11 digits)
     const cleanPhone = String(formState?.customerPhone || '').replace(/\D/g, '');
     const isPhoneValid = cleanPhone.length === 11;
-
-    // FIX: Changed referenceNumber to refNumber to match your hook state!
     const cleanRef = String(formState?.refNumber || '').replace(/\D/g, '');
     const isRefValid = cleanRef.length === 13;
-
-    // Strict Screenshot Check (File object, URL string, or truthy value)
     const hasScreenshot = !!formState?.screenshot;
 
-    // Conditional validation if "delivery" mode is active
     if (formState?.orderType === 'delivery') {
-      const hasSitio = !!formState?.sitio;
+      const hasSitio = !!formState?.sitio?.trim();
       const hasLandmark = !!formState?.landmark?.trim();
       return hasAgreed && hasName && isPhoneValid && isRefValid && hasScreenshot && hasSitio && hasLandmark;
     }
 
-    // Default verification for pickup orders
     return hasAgreed && hasName && isPhoneValid && isRefValid && hasScreenshot;
-  }
+  };
 
-  // Guard: If formState is not initialized, return null
   if (!formState) return null;
 
   if (stage === 'done') {
@@ -59,7 +57,7 @@ export default function GCashModal({ onClose, onSuccess }) {
         downloadReceipt={downloadReceipt} 
         customerPhone={formState.customerPhone} 
       />
-    )
+    );
   }
 
   return (
@@ -78,14 +76,13 @@ export default function GCashModal({ onClose, onSuccess }) {
         <div className="p-6 space-y-5">
           <GCashQR grandTotal={grandTotal} />
 
-          {/* Pass state and setter explicitly */}
           <OrderTypeSelector formState={formState} setFormState={setFormState} />
 
           {formState.orderType === 'delivery' && (
             <DeliveryForm 
               formState={formState} 
               setFormState={setFormState} 
-              deliveryZones={formState.deliveryZones || []} 
+              deliveryZones={deliveryZones} 
             />
           )}
 
@@ -93,7 +90,6 @@ export default function GCashModal({ onClose, onSuccess }) {
 
           <PaymentForm formState={formState} setFormState={setFormState} />
 
-          {/* Terms & Agreement Checkbox */}
           <div className="flex items-start gap-2.5 pt-1">
             <input 
               type="checkbox" 
@@ -103,7 +99,7 @@ export default function GCashModal({ onClose, onSuccess }) {
               className="mt-1 h-4 w-4 rounded border-2 border-brew-brown/30 accent-brew-brown focus:ring-0 cursor-pointer"
             />
             <label htmlFor="terms" className="font-body text-xs text-brew-brown/70 leading-tight cursor-pointer select-none">
-              I agree to the <span className="underline font-semibold text-brew-brown hover:text-brew-dark">Terms and Conditions</span> and confirm my checkout details are accurate before making a payment.
+              I agree to the <span className="underline font-semibold text-brew-brown hover:text-brew-dark">Terms and Conditions</span>
             </label>
           </div>
 
@@ -123,5 +119,5 @@ export default function GCashModal({ onClose, onSuccess }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

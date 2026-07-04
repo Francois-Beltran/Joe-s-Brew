@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabaseClient';
 
-export function useGCashModal({ onSuccess, setStage }) {
+export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
   const [formState, setFormState] = useState({
     customerName: '',
     customerPhone: '',
@@ -10,16 +10,14 @@ export function useGCashModal({ onSuccess, setStage }) {
     landmark: '',
     refNumber: '',
     screenshot: null,
-    preview: null,
     agreedToTerms: false,
-  })
+  });
 
-  const [deliveryZones, setDeliveryZones] = useState([])
-  const [selectedFee, setSelectedFee] = useState(0)
-  const [deliveryCoords, setDeliveryCoords] = useState(null)
-  const [locationError, setLocationError] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [deliveryZones, setDeliveryZones] = useState([]);
+  const [selectedFee, setSelectedFee] = useState(0);
+  const [deliveryError, setDeliveryError] = useState(''); // New: specific delivery error
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Fetch delivery zones
   useEffect(() => {
@@ -28,112 +26,115 @@ export function useGCashModal({ onSuccess, setStage }) {
         .from('delivery_zones')
         .select('sitio_name, fee')
         .eq('is_active', true)
-        .order('sitio_name')
-      setDeliveryZones(data ?? [])
+        .order('sitio_name');
+      setDeliveryZones(data || []);
     }
-    fetchZones()
-  }, [])
+    fetchZones();
+  }, []);
 
-  // Fee calculation
+  // Delivery fee + Minimum Order Validation
   useEffect(() => {
-    const zone = deliveryZones.find(z => z.sitio_name === formState.sitio)
-    if (!zone) {
-      setSelectedFee(0)
-      return
+    setDeliveryError('');
+    const zone = deliveryZones.find(z => z.sitio_name === formState.sitio);
+    
+    if (!zone || formState.orderType !== 'delivery') {
+      setSelectedFee(0);
+      return;
     }
 
-    if (displayTotal >= 1000) {
-      setSelectedFee(0)
-    } else if (formState.sitio === 'Cogtong') {
-      setSelectedFee(0)
+    const isCogtong = formState.sitio === 'Cogtong';
+
+    if (cartTotal >= 1000) {
+      setSelectedFee(0);
+    } else if (isCogtong) {
+      if (cartTotal < 200) {
+        setDeliveryError(`Delivery to Cogtong requires a minimum order of ₱200. Current: ₱${cartTotal}`);
+        setSelectedFee(null);
+      } else {
+        setSelectedFee(0);
+      }
     } else {
-      setSelectedFee(Number(zone.fee))
+      if (cartTotal < 500) {
+        setDeliveryError(`Delivery to ${formState.sitio} requires a minimum order of ₱500. Current: ₱${cartTotal}`);
+        setSelectedFee(null);
+      } else {
+        setSelectedFee(Number(zone.fee));
+      }
     }
-  }, [formState.sitio, deliveryZones])
+  }, [formState.sitio, formState.orderType, deliveryZones, cartTotal]);
 
-  const displayTotal = 0 // You need to pass cart or calculate here
-
-  const grandTotal = displayTotal + (formState.orderType === 'delivery' ? Number(selectedFee || 0) : 0)
+  const grandTotal = cartTotal + (selectedFee > 0 ? selectedFee : 0);
 
   const handleSubmit = async () => {
-    if (loading) return
-    setError('')
-    setLoading(true)
+    if (loading) return;
+    setError('');
+    setLoading(true);
+
+    // Block if delivery minimum not met
+    if (formState.orderType === 'delivery' && selectedFee === null) {
+      setError(deliveryError || 'Delivery minimum not met');
+      setLoading(false);
+      return;
+    }
 
     try {
-      let screenshotUrl = null
+      let screenshotUrl = null;
 
-      // 1. Upload payment screenshot to Supabase Storage Bucket
       if (formState.screenshot) {
-        const fileExt = formState.screenshot.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-        const filePath = `gcash-proofs/${fileName}`
-
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('gcash-screenshots')
-          .upload(filePath, formState.screenshot)
+          .upload(fileName, formState.screenshot);
 
-        if (uploadError) throw new Error(`Screenshot upload failed: ${uploadError.message}`)
+        if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
-          .from('gcash-screenshots')
-          .getPublicUrl(filePath)
-          
-        screenshotUrl = urlData?.publicUrl
+        const { data: urlData } = supabase.storage.from('gcash-screenshots').getPublicUrl(fileName);
+        screenshotUrl = urlData.publicUrl;
       }
 
-      // 2. Combine delivery data into your table's unified delivery_address column
-      const compiledAddress = formState.orderType === 'delivery' 
-        ? `Sitio ${formState.sitio || ''}, Landmark: ${formState.landmark || ''}`.trim()
-        : null;
-
-      // 3. Insert Order Payload aligned to your EXACT schema columns
       const orderPayload = {
-        customer_name: formState.customerName,
+        customer_name: formState.customerName.trim(),
         customer_phone: formState.customerPhone,
         order_type: formState.orderType,
-        delivery_address: compiledAddress, // Maps to your delivery_address column
-        status: 'pending',
+        delivery_address: formState.orderType === 'delivery' 
+          ? `Sitio: ${formState.sitio}${formState.landmark ? ` | Landmark: ${formState.landmark}` : ''}` 
+          : null,
         total_amount: grandTotal,
-        delivery_fee: formState.orderType === 'delivery' ? selectedFee : 0,
-        gcash_ref: formState.refNumber, // Maps to your gcash_ref column
-        gcash_screenshot_url: screenshotUrl, // Maps to your gcash_screenshot_url column
-        gcash_verified: false, // Default value matching your table type
-        created_at: new Date().toISOString()
-      }
+        delivery_fee: selectedFee > 0 ? selectedFee : 0,
+        gcash_ref: formState.refNumber,
+        gcash_screenshot_url: screenshotUrl,
+        gcash_verified: false,
+        status: 'pending',
+      };
 
       const { data, error: dbError } = await supabase
-        .from('orders') // Your verified table name
+        .from('orders')
         .insert([orderPayload])
         .select()
-        .single()
+        .single();
 
-      if (dbError) throw dbError
+      if (dbError) throw dbError;
 
-      // 3. Success -> Transition screen stage
-      setFormState(prev => ({ ...prev, result: data }))
-      setStage('done')
-      
+      setFormState(prev => ({ ...prev, result: data }));
+      setStage('done');
+      if (onSuccess) onSuccess(data);
+
     } catch (err) {
-      console.error("Submission Error:", err)
-      setError(err.message || 'Something went wrong while processing your order.')
+      console.error(err);
+      setError(err.message || 'Failed to place order');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const downloadReceipt = () => {
-    console.log('Download receipt')
-  }
+  };
 
   return {
     formState,
     setFormState,
     grandTotal,
-    error,
+    error: error || deliveryError,
     loading,
     handleSubmit,
-    downloadReceipt,
+    deliveryZones,
     selectedFee,
-  }
+  };
 }

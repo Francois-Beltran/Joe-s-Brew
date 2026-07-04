@@ -8,7 +8,7 @@ import Home from './pages/Home'
 import Success from './pages/Success'
 
 import AdminDashboard from './features/admin/Dashboard'
-//import EmployeeDashboard from './pages/employee/Dashboard'   // ← This should work
+import EmployeeDashboard from './features/employee/Dashboard'   // Make sure this path matches your file
 
 import AdminGuard from './components/common/AdminGuard'
 import EmployeeGuard from './components/common/EmployeeGuard'
@@ -31,6 +31,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/success" element={<Success />} />
+      
       <Route
         path="/admin"
         element={
@@ -39,14 +40,15 @@ function AppRoutes() {
           </AdminGuard>
         }
       />
-      {/*<Route
+      
+      <Route
         path="/employee"
         element={
           <EmployeeGuard>
             <EmployeeDashboard />
           </EmployeeGuard>
         }
-      />*/}
+      />
     </Routes>
   )
 }
