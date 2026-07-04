@@ -1,43 +1,37 @@
-import express from 'express'
-import crypto from 'crypto'
+import express from 'express';
+import { validateLogin } from '../validators/authValidator.js';
+import { authService } from '../services/authService.js';
 
-const router = express.Router()
-router.use(express.json())
+const router = express.Router();
+router.use(express.json());
 
-// Simple in-memory token store — good enough for a single small shop
-// Tokens expire after 12 hours
-const validTokens = new Map()
+router.post('/admin-login', async (req, res) => {
+  try {
+    const validation = validateLogin(req.body, 'admin');
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.error });
+    }
 
-function issueToken() {
-  const token = crypto.randomBytes(32).toString('hex')
-  validTokens.set(token, Date.now() + 12 * 60 * 60 * 1000) // 12h expiry
-  return token
-}
-
-export function isValidToken(token) {
-  const expiry = validTokens.get(token)
-  if (!expiry) return false
-  if (Date.now() > expiry) {
-    validTokens.delete(token)
-    return false
+    const result = authService.adminLogin(validation.password);
+    res.json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
   }
-  return true
-}
+});
 
-router.post('/admin-login', (req, res) => {
-  const { password } = req.body
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Incorrect password' })
+router.post('/employee-login', async (req, res) => {
+  try {
+    const validation = validateLogin(req.body, 'employee');
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const result = authService.employeeLogin(validation.password);
+    res.json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
   }
-  res.json({ token: issueToken() })
-})
+});
 
-router.post('/employee-login', (req, res) => {
-  const { password } = req.body
-  if (password !== process.env.EMPLOYEE_PASSWORD) {
-    return res.status(401).json({ error: 'Incorrect password' })
-  }
-  res.json({ token: issueToken() })
-})
-
-export default router
+export { isValidToken } from '../services/authService.js'; // Export for middleware use
+export default router;
