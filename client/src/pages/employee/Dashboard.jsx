@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 import { createAuthFetch } from '../../lib/authFetch'
+import InstallPrompt, { InstallButton } from '../../components/InstallPrompt'
 
 const employeeFetch = createAuthFetch('joesbrew_employee_token')
 
@@ -147,7 +148,10 @@ export default function EmployeeDashboard() {
         <div className="min-h-screen bg-brew-beige p-6">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6">
-                    <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
+                    <div className="flex items-center justify-between gap-4">
+                        <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
+                        <InstallButton context="employee" />
+                    </div>
                     <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Employee fulfillment</p>
                 </div>
 
@@ -314,5 +318,6 @@ export default function EmployeeDashboard() {
                 </div>
             </div>
         </div>
+        <InstallPrompt context="employee" />
     )
 }
