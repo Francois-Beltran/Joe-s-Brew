@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '../hooks/useCart'
 import { supabase } from '../lib/supabaseClient'
+import MagneticButton from './MagneticButton'
 
 function StarRating({ rating }) {
   const full = Math.floor(rating)
@@ -198,13 +199,14 @@ export default function MenuCard({ item }) {
           </p>
         )}
 
-        <button
+        <MagneticButton
           onClick={handleAdd}
           disabled={!item.is_available}
-          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+          strength={item.is_available ? 0.3 : 0}
         >
           {!item.is_available ? 'CURRENTLY UNAVAILABLE' : inCart ? `ADD AGAIN (${inCart.quantity} in cart)` : 'ADD TO CART'}
-        </button>
+        </MagneticButton>
       </div>
     </div>
   )

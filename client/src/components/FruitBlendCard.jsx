@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../hooks/useCart'
+import MagneticButton from './MagneticButton'
 
 export default function FruitBlendCard({ item }) {
   const { addItem, cart } = useCart()
@@ -180,17 +181,18 @@ export default function FruitBlendCard({ item }) {
           </div>
         )}
 
-        <button
+        <MagneticButton
           onClick={handleAdd}
           disabled={isUnavailable}
-          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+          className="mt-auto w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-2 rounded-xl hover:bg-brew-dark hover:shadow-lg active:scale-95 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+          strength={isUnavailable ? 0 : 0.3}
         >
           {isUnavailable
             ? 'CURRENTLY UNAVAILABLE'
             : inCart
               ? `ADD AGAIN (${inCart.quantity} in cart)`
               : 'ADD TO CART'}
-        </button>
+        </MagneticButton>
       </div>
     </div>
   )

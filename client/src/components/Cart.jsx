@@ -54,8 +54,16 @@ export default function Cart({ onClose }) {
           onClick={onClose}
         />
 
-        {/* Drawer */}
-        <div className="w-full max-w-md bg-brew-light h-full flex flex-col shadow-2xl overflow-y-auto animate-fade-in-up">
+        {/* Drawer — glassmorphism panel */}
+        <div
+          className="w-full max-w-md h-full flex flex-col shadow-2xl overflow-y-auto animate-fade-in-up"
+          style={{
+            background: 'rgba(243, 233, 220, 0.82)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderLeft: '1px solid rgba(213,188,158,0.4)',
+          }}
+        >
           <div className="p-6 border-b border-brew-brown/20 flex items-center justify-between">
             <h2 className="font-heading text-2xl text-brew-brown tracking-wider">YOUR ORDER</h2>
             <button onClick={onClose} className="text-brew-brown/60 hover:text-brew-brown text-2xl">✕</button>

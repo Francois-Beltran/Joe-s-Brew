@@ -68,3 +68,36 @@ input:focus, textarea:focus, select:focus {
   background: rgba(74, 37, 17, 0.2);
   border-radius: 10px;
 }
+
+/* ── Glassmorphism card utility ─────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+/* ── Magnetic button — override transition when user is hovering ── */
+.magnetic-btn {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.35s ease,
+              background-color 0.2s ease;
+  will-change: transform;
+}
+
+/* ── Hero scroll indicator — fades as page scrolls past 10vh ─── */
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%       { transform: translateY(6px); opacity: 1; }
+}
+.scroll-indicator {
+  animation: scrollBounce 2s ease-in-out infinite;
+}
+
+/* ── Prevent scroll restoration jump on hero video section ────── */
+#hero video {
+  pointer-events: none;
+  user-select: none;
+}
