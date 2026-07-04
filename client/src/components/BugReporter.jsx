@@ -93,6 +93,7 @@ export default function BugReporter() {
 
       {/* Tab handle — always visible on the edge, click to slide panel out */}
       <button
+        id="bug-reporter-toggle"
         onClick={() => setOpen(!open)}
         className="bg-brew-brown text-brew-beige font-heading text-xs px-2 py-6 rounded-l-xl shadow-lg shrink-0"
         style={{ writingMode: 'vertical-rl' }}

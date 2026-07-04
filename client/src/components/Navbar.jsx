@@ -29,8 +29,9 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-8 font-body text-sm tracking-wide">
-            <a href="#menu" className="hover:text-white transition-colors">Menu</a>
-            <a href="#about" className="hover:text-white transition-colors">About</a>
+            <a href="#menu"     className="hover:text-white transition-colors">Menu</a>
+            <a href="#branches" className="hover:text-white transition-colors">Branches</a>
+            <a href="#about"    className="hover:text-white transition-colors">About</a>
           </div>
 
           <button

@@ -69,6 +69,21 @@ input:focus, textarea:focus, select:focus {
   border-radius: 10px;
 }
 
+/* ── Scroll-reveal ──────────────────────────────────────────── */
+/* Initial hidden state — GPU only (opacity + transform, no layout) */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+/* Visible state added by useReveal hook */
+.reveal.in-view {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 /* ── Glassmorphism card utility ─────────────────────────────── */
 .glass-card {
   background: rgba(255, 255, 255, 0.12);
