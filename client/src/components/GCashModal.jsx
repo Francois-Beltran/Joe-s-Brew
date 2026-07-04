@@ -28,7 +28,7 @@ export default function GCashModal({ onClose, onSuccess }) {
   const fileInputRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
-  const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
+  const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09241913950'
   const GCASH_NAME = import.meta.env.VITE_GCASH_NAME || 'RO***A O.'
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
   const grandTotal = displayTotal + (orderType === 'delivery' ? Number(selectedFee || 0) : 0)

@@ -77,7 +77,7 @@ export default function MenuCard({ item }) {
   }
 
   return (
-    <div className="bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full">
+    <div className={`bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full ${!item.is_available ? 'grayscale' : ''}`}>
 
       {/* Best Seller badge */}
       {item.best_seller && item.is_available && (
@@ -98,8 +98,7 @@ export default function MenuCard({ item }) {
           <img
             src={item.image_url}
             alt={item.name}
-            className={`w-full h-full object-cover transition-transform duration-500 ${item.is_available ? 'hover:scale-105' : 'grayscale opacity-60'
-              }`}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
         </div>
       ) : (

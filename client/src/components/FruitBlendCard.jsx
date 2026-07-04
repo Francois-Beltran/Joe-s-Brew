@@ -73,7 +73,7 @@ export default function FruitBlendCard({ item }) {
   }
 
   return (
-    <div className="bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full">
+    <div className={`bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full ${isUnavailable ? 'grayscale' : ''}`}>
 
       {/* Badges */}
       {item.best_seller && !isUnavailable && (
@@ -93,9 +93,7 @@ export default function FruitBlendCard({ item }) {
           <img
             src={item.image_url}
             alt={item.name}
-            className={`w-full h-full object-cover transition-transform duration-500 ${
-              isUnavailable ? 'grayscale opacity-60' : 'hover:scale-105'
-            }`}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
         </div>
       ) : (

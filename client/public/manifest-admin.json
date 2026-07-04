@@ -9,6 +9,7 @@
   "background_color": "#D5BC9E",
   "theme_color": "#4A2511",
   "orientation": "portrait",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/images/admin-icon-192.png",
@@ -21,6 +22,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-admin-mobile.jpg",
+      "sizes": "390x844",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Admin — Payment verification"
     }
   ]
 }

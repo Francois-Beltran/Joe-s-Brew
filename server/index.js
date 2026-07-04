@@ -5,6 +5,7 @@ import checkoutRouter from './routes/checkout.js'
 import ordersRouter from './routes/orders.js'
 import shopRouter from './routes/shop.js'
 import authRouter from './routes/auth.js'
+import pushRouter from './routes/push.js'
 
 dotenv.config()
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/checkout', checkoutRouter)
 app.use('/api/orders', ordersRouter)
 app.use('/api/shop', shopRouter)
+app.use('/api/push', pushRouter)
 
 /**
  * Health check endpoint

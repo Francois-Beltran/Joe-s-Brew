@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 import { createAuthFetch } from '../../lib/authFetch'
 import InstallPrompt, { InstallButton } from '../../components/InstallPrompt'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const adminFetch = createAuthFetch('joesbrew_admin_token')
 
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [shopOpen, setShopOpen] = useState(true)
   const [togglingShop, setTogglingShop] = useState(false)
   const [deletingAll, setDeletingAll] = useState(false)
+  const { status: pushStatus, subscribe: subscribePush } = usePushNotifications('admin')
 
   const todayStr = new Date().toDateString()
 
@@ -272,9 +274,19 @@ export default function Dashboard() {
       <div className="max-w-3xl mx-auto">
 
         <div className="mb-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <h1 className="font-heading text-5xl text-brew-brown">ADMIN DASHBOARD</h1>
-            <InstallButton context="admin" />
+            <div className="flex gap-2 items-center">
+              {pushStatus === 'idle' && (
+                <button onClick={subscribePush} className="font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors">
+                  🔔 ENABLE ALERTS
+                </button>
+              )}
+              {pushStatus === 'subscribed' && (
+                <span className="font-heading text-xs text-green-700 px-3 py-1 rounded-full bg-green-100">🔔 ALERTS ON</span>
+              )}
+              <InstallButton context="admin" />
+            </div>
           </div>
           <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Payment verification</p>
         </div>

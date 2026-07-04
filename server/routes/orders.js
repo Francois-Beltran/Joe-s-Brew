@@ -1,6 +1,7 @@
 import express from 'express'
 import { supabaseAdmin } from '../lib/supabaseAdmin.js'
 import { validateAdmin } from '../middleware/validateAdmin.js'
+import { sendPushToRole } from './push.js'
 
 const router = express.Router()
 router.use(express.json())
@@ -176,6 +177,22 @@ router.post('/verify', validateAdmin, async (req, res) => {
       }
     }
 
+    // Web push — notify admin dashboard and employee dashboard of new paid order
+    sendPushToRole('admin', {
+      title: "Joe's Brew — Payment Verified",
+      body: `Order #${orderId.slice(0, 8).toUpperCase()} · PHP ${Number(order.total_amount).toFixed(2)}`,
+      icon: '/images/admin-icon-192.png',
+      tag: `verify-${orderId}`,
+      url: '/admin',
+    }).catch(() => {})
+    sendPushToRole('employee', {
+      title: "New Order Ready to Fulfill ☕",
+      body: `${order.customer_name || 'A customer'} · PHP ${Number(order.total_amount).toFixed(2)}`,
+      icon: '/images/employee-icon-192.png',
+      tag: `fulfill-${orderId}`,
+      url: '/employee',
+    }).catch(() => {})
+
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error', detail: error.message })
@@ -319,6 +336,15 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
         console.error('Customer SMS notify error (fulfill):', smsErr.message)
       }
     }
+
+    // Web push — notify customer that order is ready
+    sendPushToRole('customer', {
+      title: "Your order is ready! ☕",
+      body: `Order #${orderId.slice(0, 8).toUpperCase()} — please proceed to the counter.`,
+      icon: '/images/icon-192.png',
+      tag: `ready-${orderId}`,
+      url: '/',
+    }).catch(() => {})
 
     res.json({ success: true })
   } catch (error) {
