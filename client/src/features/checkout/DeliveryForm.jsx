@@ -1,4 +1,5 @@
 export default function DeliveryForm({ formState, setFormState, deliveryZones, selectedFee }) {
+  const zones = formState?.deliveryZones || [];
   return (
     <>
       <div>

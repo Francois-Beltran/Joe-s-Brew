@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useCart } from '../hooks/useCart'
-import { supabase } from '../lib/supabaseClient'
+import { useCart } from '../../hooks/useCart'
+import { supabase } from "../../lib/supabaseClient";
+import AddonPicker from "../../components/ui/AddonPicker";
 
 function StarRating({ rating }) {
   const full = Math.floor(rating)

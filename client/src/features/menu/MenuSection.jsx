@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { supabase } from '../lib/supabaseClient'
-import MenuCard from './MenuCard'
-import FruitBlendCard from './FruitBlendCard'
-import AddonPicker from './AddonPicker'
+import { supabase } from '../../lib/supabaseClient'
+import MenuCard from '../menu/MenuCard';
+import FruitBlendCard from "../../components/ui/FruitBlendCard";
+import AddonPicker from "../../components/ui/AddonPicker";
 
 gsap.registerPlugin(ScrollTrigger)
 

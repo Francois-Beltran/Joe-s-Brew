@@ -1,19 +1,8 @@
-name: Hybrid - Gemini + Local
+name: Qwen Local + Scan
 version: 1.0.0
 schema: v1
 
 models:
-  # Cloud - Smart & Free tier
-  - name: Gemini 2.5 Flash
-    provider: gemini
-    model: gemini-2.5-flash
-    apiKey: AQ.Ab8RN6J9AZQeCfK0W4tmhqxk6Uol-uTrQfDw9x8GUtx25V_3qA
-    roles:
-      - chat
-      - edit
-      - apply
-
-  # Local fallback
   - name: Qwen2.5-Coder 7B
     provider: ollama
     model: qwen2.5-coder:7b
@@ -22,7 +11,7 @@ models:
       - edit
       - apply
 
-  - name: Qwen 1.5B Autocomplete
+  - name: Qwen2.5-Coder 1.5B Autocomplete
     provider: ollama
     model: qwen2.5-coder:1.5b
     roles:
@@ -33,3 +22,23 @@ models:
     model: nomic-embed-text
     roles:
       - embed
+
+# Custom Rules / Commands
+rules:
+  - "You are a helpful, precise, and honest coding assistant."
+
+slashCommands:
+  - name: scan
+    description: Scan the project for syntax errors, import issues, and bugs
+    prompt: |
+      @codebase Please perform a full project scan and check for:
+
+      1. Syntax errors
+      2. Import / module errors
+      3. Unused imports
+      4. Obvious runtime bugs or broken logic
+      5. Any other issues
+
+      Focus on recently modified files and open files if possible.
+      List findings clearly with file paths and line numbers.
+      If everything looks good, say so.

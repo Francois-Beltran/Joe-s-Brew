@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API_URL } from '../lib/api'
+import { API_URL } from "../../lib/api";
 
 export default function AdminGuard({ children }) {
   const [authed, setAuthed] = useState(false)

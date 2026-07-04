@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useCart } from '../hooks/useCart'
-import Cart from './Cart'
+import { useCart } from '../../hooks/useCart'
+import Cart from "../../features/cart/Cart";
 
 /**
  * Navigation bar component with cart button

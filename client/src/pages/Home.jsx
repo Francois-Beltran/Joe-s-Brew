@@ -1,8 +1,8 @@
-import Navbar from '../components/Navbar'
-import HeroSection from '../components/HeroSection'
-import MenuSection from '../components/MenuSection'
-import InstallPrompt from '../components/InstallPrompt'
-import BugReporter from '../components/BugReporter'
+import Navbar from '../components/common/Navbar'
+import HeroSection from '../components/common/HeroSection'
+import MenuSection from '../features/menu/MenuSection'
+import BugReporter from '../components/common/BugReporter'   // if used
+import InstallPrompt from '../components/common/InstallPrompt'
 import { useState, useEffect } from 'react'
 
 /**

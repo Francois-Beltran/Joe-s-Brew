@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import { useCart } from '../hooks/useCart'
+import { supabase } from "../../lib/supabaseClient";
+import { useCart } from "../../hooks/useCart";
 
 /**
  * AddonPicker — shows relevant add-ons for a given product category.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import { useCart } from '../hooks/useCart'
+import { supabase } from "../../lib/supabaseClient";
+import { useCart } from "../../hooks/useCart";
 
 /**
  * FruitBlendCard — special card for the unified Fruit Blend category.

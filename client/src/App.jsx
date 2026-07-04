@@ -1,19 +1,20 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './hooks/useCart'
-import AdminGuard from './components/AdminGuard'
-import Home from './pages/Home'
-import Dashboard from './pages/admin/Dashboard'
-import Success from './pages/Success'
-import EmployeeGuard from './components/EmployeeGuard'
-import EmployeeDashboard from './pages/employee/Dashboard'
-import TermsGate from './components/TermsGate'
+import TermsGate from './components/common/TermsGate'
+import BugReporter from './components/common/BugReporter'
 import { useDynamicManifest } from './hooks/useDynamicManifest'
 
-// AppRoutes exists as its own component so useDynamicManifest (which needs
-// useLocation) runs INSIDE the BrowserRouter — hooks that read the URL
-// only work for components rendered inside <BrowserRouter>.
+import Home from './pages/Home'
+import Success from './pages/Success'
+
+import AdminDashboard from './features/admin/Dashboard'
+//import EmployeeDashboard from './pages/employee/Dashboard'   // ← This should work
+
+import AdminGuard from './components/common/AdminGuard'
+import EmployeeGuard from './components/common/EmployeeGuard'
+
 function AppRoutes() {
-  useDynamicManifest() // swaps manifest.json based on current route (customer/admin/employee)
+  useDynamicManifest()
 
   const hostname = window.location.hostname
 
@@ -34,31 +35,31 @@ function AppRoutes() {
         path="/admin"
         element={
           <AdminGuard>
-            <Dashboard />
+            <AdminDashboard />
           </AdminGuard>
         }
       />
-      <Route
+      {/*<Route
         path="/employee"
         element={
           <EmployeeGuard>
             <EmployeeDashboard />
           </EmployeeGuard>
         }
-      />
+      />*/}
     </Routes>
   )
 }
 
-  export default function App() {
+export default function App() {
   return (
     <TermsGate>
       <CartProvider>
         <BrowserRouter>
           <AppRoutes />
+          <BugReporter />
         </BrowserRouter>
       </CartProvider>
     </TermsGate>
   )
-
 }
