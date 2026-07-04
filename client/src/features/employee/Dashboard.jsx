@@ -13,14 +13,27 @@ export default function EmployeeDashboard() {
   const [shopOpen, setShopOpen] = useState(true);
   const [togglingShop, setTogglingShop] = useState(false);
 
-  // Fetch orders (only paid and ready)
   const fetchOrders = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(quantity, unit_price, menu_items(name))')
-      .in('status', ['paid', 'ready'])
-      .order('created_at', { ascending: true });
-    setOrders(data ?? []);
+      .select(`
+      *,
+      order_items (
+        quantity,
+        unit_price,
+        menu_items (
+          name
+        )
+      )
+    `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching orders:', error);
+      return;
+    }
+
+    setOrders(data || []);
     setLoading(false);
   };
 
@@ -107,7 +120,7 @@ export default function EmployeeDashboard() {
       return;
     }
 
-    setMenuItems(prev => prev.map(m => 
+    setMenuItems(prev => prev.map(m =>
       m.id === item.id ? { ...m, is_available: !m.is_available } : m
     ));
   };
@@ -177,7 +190,7 @@ export default function EmployeeDashboard() {
                   className={`font-heading text-xs tracking-wider px-4 py-1 rounded-full border transition-colors ${activeTab === tab
                     ? 'bg-brew-brown text-brew-beige border-brew-brown'
                     : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'
-                  }`}
+                    }`}
                 >
                   {tab.toUpperCase()}
                   {tab === 'pending' && <span className="ml-1">({orders.filter(o => o.status === 'paid').length})</span>}

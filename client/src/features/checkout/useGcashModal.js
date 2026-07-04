@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
-export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
+export function useGCashModal({ onSuccess, setStage, cartTotal = 0, cartItems = [] }) {
   const [formState, setFormState] = useState({
     customerName: '',
     customerPhone: '',
@@ -15,7 +15,7 @@ export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
 
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [selectedFee, setSelectedFee] = useState(0);
-  const [deliveryError, setDeliveryError] = useState(''); // New: specific delivery error
+  const [deliveryError, setDeliveryError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,11 +32,11 @@ export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
     fetchZones();
   }, []);
 
-  // Delivery fee + Minimum Order Validation
+  // Delivery fee + minimum order logic
   useEffect(() => {
     setDeliveryError('');
     const zone = deliveryZones.find(z => z.sitio_name === formState.sitio);
-    
+
     if (!zone || formState.orderType !== 'delivery') {
       setSelectedFee(0);
       return;
@@ -70,7 +70,11 @@ export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
     setError('');
     setLoading(true);
 
-    // Block if delivery minimum not met
+    console.log('handleSubmit started');
+    console.log('Form State:', formState);
+    console.log('Cart Items:', cartItems);
+    console.log('Cart Total:', cartTotal);
+
     if (formState.orderType === 'delivery' && selectedFee === null) {
       setError(deliveryError || 'Delivery minimum not met');
       setLoading(false);
@@ -78,26 +82,33 @@ export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
     }
 
     try {
+      console.log('Starting order creation...');
+
       let screenshotUrl = null;
 
       if (formState.screenshot) {
+        console.log('Uploading screenshot...');
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('gcash-screenshots')
           .upload(fileName, formState.screenshot);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
 
         const { data: urlData } = supabase.storage.from('gcash-screenshots').getPublicUrl(fileName);
         screenshotUrl = urlData.publicUrl;
+        console.log('Screenshot uploaded:', screenshotUrl);
       }
 
       const orderPayload = {
         customer_name: formState.customerName.trim(),
         customer_phone: formState.customerPhone,
         order_type: formState.orderType,
-        delivery_address: formState.orderType === 'delivery' 
-          ? `Sitio: ${formState.sitio}${formState.landmark ? ` | Landmark: ${formState.landmark}` : ''}` 
+        delivery_address: formState.orderType === 'delivery'
+          ? `Sitio: ${formState.sitio}${formState.landmark ? ` | Landmark: ${formState.landmark}` : ''}`
           : null,
         total_amount: grandTotal,
         delivery_fee: selectedFee > 0 ? selectedFee : 0,
@@ -107,20 +118,51 @@ export function useGCashModal({ onSuccess, setStage, cartTotal = 0 }) {
         status: 'pending',
       };
 
-      const { data, error: dbError } = await supabase
+      console.log('Order Payload:', orderPayload);
+
+      // Create Order
+      const { data: order, error: dbError } = await supabase
         .from('orders')
         .insert([orderPayload])
         .select()
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('DB Error:', dbError);
+        throw dbError;
+      }
 
-      setFormState(prev => ({ ...prev, result: data }));
+      console.log('Order created successfully:', order);
+
+      // Insert Order Items
+      if (cartItems && cartItems.length > 0) {
+        console.log('Inserting order items...');
+        const orderItemsPayload = cartItems.map(item => ({
+          order_id: order.id,
+          menu_item_id: item.menuItemId || item.id || item.actualMenuItemId,
+          quantity: item.quantity || 1,
+          unit_price: Number(item.displayPrice || item.price || 0),
+        }));
+
+        console.log('Order Items Payload:', orderItemsPayload);
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItemsPayload);
+
+        if (itemsError) {
+          console.error('Items Error:', itemsError);
+        } else {
+          console.log('Order items inserted successfully');
+        }
+      }
+
+      setFormState(prev => ({ ...prev, result: order }));
       setStage('done');
-      if (onSuccess) onSuccess(data);
+      if (onSuccess) onSuccess(order);
 
     } catch (err) {
-      console.error(err);
+      console.error('Final Catch Error:', err);
       setError(err.message || 'Failed to place order');
     } finally {
       setLoading(false);

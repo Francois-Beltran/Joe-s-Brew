@@ -12,27 +12,27 @@ export default function AdminDashboard() {
   const [togglingShop, setTogglingShop] = useState(false);
 
   const fetchOrders = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .select(`
-        *,
-        order_items (
-          quantity,
-          unit_price,
-          menu_items (name)
+      *,
+      order_items (
+        quantity,
+        unit_price,
+        menu_items (
+          name
         )
-      `)
+      )
+    `)
       .order('created_at', { ascending: false });
-    setOrders(data ?? []);
-    setLoading(false);
 
-    const revenue = (data || []).reduce((sum, o) => {
-      if (['paid', 'ready'].includes(o.status)) {
-        return sum + Number(o.total_amount || 0);
-      }
-      return sum;
-    }, 0);
-    setTotalRevenue(revenue);
+    if (error) {
+      console.error('Error fetching orders:', error);
+      return;
+    }
+
+    setOrders(data || []);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -139,8 +139,8 @@ export default function AdminDashboard() {
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-5 py-2 rounded-full font-heading text-sm capitalize ${activeFilter === filter 
-                ? 'bg-brew-brown text-brew-beige' 
+              className={`px-5 py-2 rounded-full font-heading text-sm capitalize ${activeFilter === filter
+                ? 'bg-brew-brown text-brew-beige'
                 : 'bg-white border border-brew-brown/30 text-brew-brown hover:bg-brew-brown/5'}`}
             >
               {filter}

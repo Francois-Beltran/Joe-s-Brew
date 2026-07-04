@@ -35,12 +35,17 @@ export default function Cart({ onClose }) {
   }, []);
 
   const handleSuccess = (orderData) => {
+    console.log('=== ORDER SUCCESS ===');
+    console.log('Order Data received:', orderData);
+
     setShowGCash(false);
     onClose();
-    // Optional: clear cart here if needed
-    window.location.href = '/success';
-  };
 
+    // TEMPORARILY DISABLE REDIRECT
+    // window.location.href = '/success';
+
+    alert('Order placed successfully! Check console for details. Do not close this alert yet.');
+  };
   return (
     <>
       <div className="fixed inset-0 z-50 flex">
@@ -90,7 +95,7 @@ export default function Cart({ onClose }) {
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-body text-brew-brown/70">Shop Status</span>
-                  <button 
+                  <button
                     onClick={checkShopStatus}
                     disabled={statusLoading}
                     className="text-xs underline"
@@ -121,7 +126,8 @@ export default function Cart({ onClose }) {
 
       {showGCash && (
         <GCashModal
-          cartTotal={cartTotal}           // ← Fixed: Passing real total
+          cartItems={cart}
+          cartTotal={cartTotal}
           onClose={() => setShowGCash(false)}
           onSuccess={handleSuccess}
         />
