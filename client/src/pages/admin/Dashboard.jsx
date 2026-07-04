@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
+import { createAuthFetch } from '../../lib/authFetch'
+
+const adminFetch = createAuthFetch('joesbrew_admin_token')
 
 /**
  * Admin dashboard — verifies/rejects GCash payments only.
@@ -111,10 +114,8 @@ export default function Dashboard() {
   const toggleShop = async () => {
     setTogglingShop(true)
     try {
-      const res = await fetch(`${API_URL}/api/shop/toggle`, {
-        method: 'POST',
-        headers: { 'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token') },
-      })
+      const res = await adminFetch(`${API_URL}/api/shop/toggle`, { method: 'POST' })
+      if (!res) return // 401 handled by authFetch (reloads)
       const data = await res.json()
       setShopOpen(data.isOpen)
     } catch {
@@ -154,22 +155,16 @@ export default function Dashboard() {
     setVerifying(order.id)
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/api/orders/verify`, {
+      const res = await adminFetch(`${API_URL}/api/orders/verify`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-        },
         body: JSON.stringify({ orderId: order.id }),
       })
-
+      if (!res) return
       const data = await res.json().catch(() => null)
-
       if (!res.ok) {
         setActionError(data?.error || `Failed to verify (status ${res.status})`)
         return
       }
-
       fetchOrders()
     } catch (error) {
       setActionError('Network error: ' + error.message)
@@ -185,22 +180,16 @@ export default function Dashboard() {
     setVerifying(order.id)
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/api/orders/reject`, {
+      const res = await adminFetch(`${API_URL}/api/orders/reject`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-        },
         body: JSON.stringify({ orderId: order.id, reason }),
       })
-
+      if (!res) return
       const data = await res.json().catch(() => null)
-
       if (!res.ok) {
         setActionError(data?.error || `Failed to reject (status ${res.status})`)
         return
       }
-
       fetchOrders()
     } catch (error) {
       setActionError('Network error: ' + error.message)
@@ -217,22 +206,16 @@ export default function Dashboard() {
 
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/api/orders/${order.id}`, {
+      const res = await adminFetch(`${API_URL}/api/orders/${order.id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-        },
         body: JSON.stringify({ confirmPassword }),
       })
-
+      if (!res) return
       const data = await res.json().catch(() => null)
-
       if (!res.ok) {
         setActionError(data?.error || `Failed to delete (status ${res.status})`)
         return
       }
-
       fetchOrders()
     } catch (error) {
       setActionError('Network error: ' + error.message)
@@ -246,14 +229,11 @@ export default function Dashboard() {
     setDeletingAll(true)
     setActionError('')
     try {
-      const res = await fetch(`${API_URL}/api/orders`, {
+      const res = await adminFetch(`${API_URL}/api/orders`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionStorage.getItem('joesbrew_admin_token'),
-        },
         body: JSON.stringify({ confirmPassword }),
       })
+      if (!res) return
       const data = await res.json().catch(() => null)
       if (!res.ok) {
         setActionError(data?.error || `Failed to delete all orders (status ${res.status})`)

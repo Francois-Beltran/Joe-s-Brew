@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
+import { createAuthFetch } from '../../lib/authFetch'
+
+const employeeFetch = createAuthFetch('joesbrew_employee_token')
 
 export default function EmployeeDashboard() {
     const [orders, setOrders] = useState([])
@@ -68,10 +71,8 @@ export default function EmployeeDashboard() {
     const toggleShop = async () => {
         setTogglingShop(true)
         try {
-            const res = await fetch(`${API_URL}/api/shop/toggle`, {
-                method: 'POST',
-                headers: { 'X-Session-Token': sessionStorage.getItem('joesbrew_employee_token') },
-            })
+            const res = await employeeFetch(`${API_URL}/api/shop/toggle`, { method: 'POST' })
+            if (!res) return
             const data = await res.json()
             setShopOpen(data.isOpen)
         } catch {
@@ -85,14 +86,11 @@ export default function EmployeeDashboard() {
         setFulfilling(order.id)
         setActionError('')
         try {
-            const res = await fetch(`${API_URL}/api/orders/fulfill`, {
+            const res = await employeeFetch(`${API_URL}/api/orders/fulfill`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Session-Token': sessionStorage.getItem('joesbrew_employee_token'),
-                },
                 body: JSON.stringify({ orderId: order.id }),
             })
+            if (!res) return
             const data = await res.json().catch(() => null)
             if (!res.ok) {
                 setActionError(data?.error || `Failed (status ${res.status})`)
