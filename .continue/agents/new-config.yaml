@@ -1,0 +1,35 @@
+name: Hybrid - Gemini + Local
+version: 1.0.0
+schema: v1
+
+models:
+  # Cloud - Smart & Free tier
+  - name: Gemini 2.5 Flash
+    provider: gemini
+    model: gemini-2.5-flash
+    apiKey: AQ.Ab8RN6J9AZQeCfK0W4tmhqxk6Uol-uTrQfDw9x8GUtx25V_3qA
+    roles:
+      - chat
+      - edit
+      - apply
+
+  # Local fallback
+  - name: Qwen2.5-Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 1.5B Autocomplete
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    roles:
+      - autocomplete
+
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text
+    roles:
+      - embed

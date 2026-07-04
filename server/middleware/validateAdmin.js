@@ -1,0 +1,23 @@
+/**
+ * Middleware to validate admin requests using shared secret
+ * Checks for X-Admin-Secret header matching environment variable
+ * NOTE: In production, replace with Supabase JWT verification for better security
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.headers - Request headers
+ * @param {string} req.headers['x-admin-secret'] - Admin secret token
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {void}
+ */
+import { isValidToken } from '../routes/auth.js'
+
+export function validateAdmin(req, res, next) {
+  const legacySecret = req.headers['x-admin-secret']
+  const token = req.headers['x-session-token']
+
+  if (legacySecret === process.env.ADMIN_SECRET) return next()
+  if (token && isValidToken(token)) return next()
+
+  return res.status(401).json({ error: 'Unauthorized' })
+}
