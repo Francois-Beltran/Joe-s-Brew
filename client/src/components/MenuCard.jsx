@@ -17,34 +17,57 @@ function StarRating({ rating }) {
   )
 }
 
-// Per-image focal point overrides. Key = exact image filename, value = CSS object-position.
-// Defaults to "center center" if not listed here.
-const IMAGE_POSITION = {
-  'joes_dark_chocolate.png':        'center 30%',
-  'joes_white_coffee.png':          'center 40%',
-  'joes_cappucino.png':             'center 30%',
-  'joes_vanilla.png':               'center 30%',
-  'iced_cappucino.jpg':             'center 40%',
-  'joes_iced_mocha.png':            'center 30%',
-  'caramel_macchiato.jpg':          'center 40%',
-  'joes_iced_spanish_latte.jpg':    'center 40%',
-  'joe_s_iced_americano.jpg':       'center 40%',
-  'matcha_cream.jpg':               'center 30%',
-  'taro_frappe.jpg':                'center 30%',
-  'joes_mango_frappe.jpg':          'center 30%',
-  'cookies_and_cream_frappe.jpg':   'center 40%',
-  'joes_okinawa_mikltea.png':       'center 30%',
-  'joes_dark_chocolate_milktea.png':'center 30%',
-  'joes_wintermelon_milktea.png':   'center 30%',
-  'classic_takoyaki.jpg':           'center 50%',
-  'berry_whip_waffle.jpg':          'center 40%',
-  'nutella_waffle.jpg':             'center 40%',
+// Per-image display overrides. Key = exact image filename.
+// position: CSS object-position (default "center center")
+// fit: CSS object-fit (default "cover") — use "contain" for portrait drink shots
+const IMAGE_STYLE = {
+  // Hot Brew
+  'joes_dark_chocolate.png':         { position: 'center 30%' },
+  'joes_white_coffee.png':           { position: 'center 40%' },
+  'joes_cappucino.png':              { position: 'center 30%' },
+  'joes_vanilla.png':                { position: 'center 30%' },
+  // Cold Brew
+  'iced_cappucino.jpg':              { position: 'center 40%' },
+  'joes_iced_mocha.png':             { position: 'center 30%' },
+  'caramel_macchiato.jpg':           { position: 'center 40%' },
+  'joes_iced_spanish_latte.jpg':     { position: 'center 40%' },
+  'joe_s_iced_americano.jpg':        { position: 'center 40%' },
+  // Frappe
+  'matcha_cream.jpg':                { position: 'center 30%' },
+  'matcha_frappe.jpg':               { fit: 'contain', position: 'center center' },
+  'taro_frappe.jpg':                 { position: 'center 30%' },
+  'joes_mango_frappe.jpg':           { position: 'center 30%' },
+  'cookies_and_cream_frappe.jpg':    { position: 'center 40%' },
+  'dark_chocolate_frappe.jpg':       { fit: 'contain', position: 'center center' },
+  'double_dutch_frappe.jpg':         { fit: 'contain', position: 'center center' },
+  'mocha_frappe.jpg':                { fit: 'contain', position: 'center center' },
+  // Milk Tea — portrait shots use contain so the full glass shows
+  'dark_choco_milktea.jpg':          { fit: 'contain', position: 'center center' },
+  'okinawa_milktea.jpg':             { fit: 'contain', position: 'center center' },
+  'hokkaido_milktea.jpg':            { fit: 'contain', position: 'center center' },
+  'white_bunny_milktea.jpg':         { fit: 'contain', position: 'center center' },
+  'cookies_and_cream_milktea.jpg':   { position: 'center 40%' },
+  'matcha_milktea.jpg':              { position: 'center 40%' },
+  'joes_wintermelon_milktea.png':    { position: 'center 30%' },
+  // old milk tea filenames (still in DB for some rows)
+  'joes_okinawa_mikltea.png':        { fit: 'contain', position: 'center center' },
+  'joes_dark_chocolate_milktea.png': { fit: 'contain', position: 'center center' },
+  // Takoyaki / Waffles
+  'classic_takoyaki.jpg':            { position: 'center 50%' },
+  'vegetarian_takoyaki.jpg':         { position: 'center 50%' },
+  'creamy_cheese_waffle.jpg':        { position: 'center 40%' },
+  'berry_whip_waffle.jpg':           { position: 'center 40%' },
+  'nutella_waffle.jpg':              { position: 'center 40%' },
 }
 
-function getImagePosition(imageUrl) {
-  if (!imageUrl) return 'center center'
+function getImageStyle(imageUrl) {
+  if (!imageUrl) return {}
   const filename = imageUrl.split('/').pop()
-  return IMAGE_POSITION[filename] ?? 'center center'
+  const override = IMAGE_STYLE[filename]
+  return {
+    objectPosition: override?.position ?? 'center center',
+    objectFit: override?.fit ?? 'cover',
+  }
 }
 
 export default function MenuCard({ item }) {
@@ -129,8 +152,8 @@ export default function MenuCard({ item }) {
           <img
             src={item.image_url}
             alt={item.name}
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-            style={{ objectPosition: getImagePosition(item.image_url) }}
+            className="w-full h-full transition-transform duration-500 hover:scale-105"
+            style={getImageStyle(item.image_url)}
           />
         </div>
       ) : (
