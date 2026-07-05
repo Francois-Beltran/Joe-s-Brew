@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import HeroSection from '../components/HeroSection'
 import BranchesSection from '../components/BranchesSection'
@@ -9,7 +9,7 @@ import BugReporter from '../components/BugReporter'
 
 export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const bugReporterRef = useRef(null)
+  const [bugOpen, setBugOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 600)
@@ -17,28 +17,39 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const openBugReporter = () => {
-    // BugReporter manages its own open state via a floating button;
-    // simulate a click on its toggle so the About section CTAs can open it.
-    const btn = document.getElementById('bug-reporter-toggle')
-    if (btn) btn.click()
-  }
-
   return (
     <main className="bg-brew-light">
       <Navbar />
       <HeroSection />
       <MenuSection />
       <BranchesSection />
-      <AboutSection onOpenBugReporter={openBugReporter} />
+      <AboutSection onOpenBugReporter={() => setBugOpen(true)} />
 
-      <footer className="bg-brew-dark text-brew-beige/40 py-8 text-center font-body text-sm">
-        <p>© {new Date().getFullYear()} Joe's Brew · Est. 1939</p>
-        <p className="mt-1 text-brew-beige/25 text-xs tracking-wider">
-          Candijay · Loboc · Cogtong · Bohol, Philippines
-        </p>
+      {/* Footer */}
+      <footer className="bg-brew-dark text-brew-beige/50 py-10 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-center md:text-left">
+            <p className="font-heading text-brew-beige/80 text-lg tracking-widest">JOE'S BREW</p>
+            <p className="font-body text-xs mt-1">© {new Date().getFullYear()} · Est. 1939</p>
+            <p className="font-body text-brew-beige/30 text-xs tracking-wider mt-0.5">
+              Candijay · Loboc · Cogtong · Bohol, Philippines
+            </p>
+          </div>
+
+          {/* Centralised bug report / feedback */}
+          <div className="flex flex-col items-center gap-2">
+            <p className="font-body text-brew-beige/35 text-xs tracking-wider uppercase">Feedback</p>
+            <button
+              onClick={() => setBugOpen(true)}
+              className="font-heading text-xs tracking-widest px-5 py-2 rounded-full border border-brew-beige/20 text-brew-beige/60 hover:border-brew-beige/50 hover:text-brew-beige transition-colors"
+            >
+              🐛 Report a Bug · 💡 Suggest a Feature
+            </button>
+          </div>
+        </div>
       </footer>
 
+      {/* Scroll-to-top */}
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -50,7 +61,7 @@ export default function Home() {
       )}
 
       <InstallPrompt />
-      <BugReporter ref={bugReporterRef} />
+      <BugReporter open={bugOpen} onClose={() => setBugOpen(false)} />
     </main>
   )
 }

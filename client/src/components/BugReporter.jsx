@@ -1,11 +1,14 @@
 import { useState } from 'react'
 
-export default function BugReporter() {
-  const [open, setOpen] = useState(false)
+// BugReporter is now a pure modal — no floating tab.
+// Parent controls visibility via the `open` and `onClose` props.
+export default function BugReporter({ open, onClose }) {
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+
+  if (!open) return null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -19,16 +22,17 @@ export default function BugReporter() {
         body: JSON.stringify({
           message: message.trim(),
           email: email.trim() || 'anonymous',
-          url: window.location.href
-        })
+          url: window.location.href,
+        }),
       })
 
       if (res.ok) {
         setSent(true)
         setTimeout(() => {
-          setOpen(false)
-          setMessage('')
           setSent(false)
+          setMessage('')
+          setEmail('')
+          onClose()
         }, 1800)
       } else {
         alert('Failed to send report. Please try again.')
@@ -41,65 +45,53 @@ export default function BugReporter() {
   }
 
   return (
-    <div className="fixed top-1/2 -translate-y-1/2 right-0 z-[60] flex items-center">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-brew-dark/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Slide-out panel */}
-      <div
-        className={`bg-white rounded-l-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
-          open ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
-        }`}
-      >
-        <div className="bg-brew-brown text-brew-beige p-4 flex items-center justify-between w-80">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+        {/* Header */}
+        <div className="bg-brew-brown text-brew-beige px-6 py-4 flex items-center justify-between">
           <div>
-            <p className="font-heading tracking-wide">Report a Bug</p>
-            <p className="text-xs opacity-75">Help us improve Joe's Brew</p>
+            <p className="font-heading tracking-wide text-lg">Report / Suggest</p>
+            <p className="text-xs text-brew-beige/60">Help us improve Joe's Brew</p>
           </div>
-          <button onClick={() => setOpen(false)} className="text-xl leading-none">✕</button>
+          <button onClick={onClose} className="text-brew-beige/70 hover:text-brew-beige text-2xl leading-none">✕</button>
         </div>
 
         {sent ? (
-          <div className="p-8 text-center w-80">
+          <div className="p-10 text-center">
             <div className="text-5xl mb-3">✅</div>
-            <p className="font-heading text-brew-brown">Thank you!</p>
-            <p className="text-sm text-brew-brown/70">Your report has been received.</p>
+            <p className="font-heading text-brew-brown text-lg">Thank you!</p>
+            <p className="text-sm text-brew-brown/70 mt-1">Your feedback has been received.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-4 space-y-4 w-80">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <input
               type="email"
               placeholder="Your email (optional)"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border border-brew-brown/30 rounded-xl px-4 py-3 text-sm"
+              className="w-full border border-brew-brown/25 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brew-brown"
             />
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="What went wrong? Be as detailed as possible..."
+              placeholder="Describe the bug or your suggestion in detail..."
               rows={5}
-              className="w-full border border-brew-brown/30 rounded-xl px-4 py-3 text-sm resize-y"
+              className="w-full border border-brew-brown/25 rounded-xl px-4 py-3 text-sm resize-y focus:outline-none focus:border-brew-brown"
               required
             />
             <button
               type="submit"
               disabled={sending || !message.trim()}
-              className="w-full bg-brew-brown text-white font-heading py-3 rounded-xl disabled:opacity-50"
+              className="w-full bg-brew-brown text-brew-beige font-heading tracking-wider py-3 rounded-xl hover:bg-brew-dark transition-colors disabled:opacity-50"
             >
               {sending ? 'Sending...' : 'SEND REPORT'}
             </button>
           </form>
         )}
       </div>
-
-      {/* Tab handle — always visible on the edge, click to slide panel out */}
-      <button
-        id="bug-reporter-toggle"
-        onClick={() => setOpen(!open)}
-        className="bg-brew-brown text-brew-beige font-heading text-xs px-2 py-6 rounded-l-xl shadow-lg shrink-0"
-        style={{ writingMode: 'vertical-rl' }}
-      >
-        🐞 BUG
-      </button>
     </div>
   )
 }

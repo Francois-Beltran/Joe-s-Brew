@@ -3,9 +3,11 @@ import { useCart } from '../hooks/useCart'
 import { API_URL } from '../lib/api'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useBranch } from '../context/BranchContext'
 
 export default function GCashModal({ onClose, onSuccess }) {
   const { cart, clearCart } = useCart()
+  const { branch } = useBranch()
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderType, setOrderType] = useState('pickup')
@@ -249,7 +251,15 @@ Thank you for choosing Joe's Brew!
                   className="w-48 h-48 rounded-xl object-contain mb-3"
                 />
                 <p className="font-heading text-brew-brown text-lg tracking-wide">{GCASH_NUMBER}</p>
-                <p className="font-body text-brew-brown/60 text-sm">{GCASH_NAME}</p>
+                <p className="font-body text-brew-brown/60 text-sm mb-3">{GCASH_NAME}</p>
+                {/* Download QR */}
+                <a
+                  href="/images/gcash-qr.jpg"
+                  download="JoesBrew_GCash_QR.jpg"
+                  className="flex items-center gap-2 font-heading text-xs tracking-wider px-4 py-2 rounded-full border border-brew-brown/30 text-brew-brown hover:bg-brew-brown hover:text-brew-beige transition-colors"
+                >
+                  📥 DOWNLOAD QR
+                </a>
               </div>
 
               {/* Steps */}
@@ -286,16 +296,35 @@ Thank you for choosing Joe's Brew!
                   >
                     🏪 Pickup
                   </button>
-                  <button
-                    onClick={() => setOrderType('delivery')}
-                    className={`flex-1 py-2 rounded-xl font-heading text-sm border-2 transition-colors ${orderType === 'delivery'
-                      ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                      : 'text-brew-brown border-brew-brown/30'
+
+                  {/* Delivery — disabled for Candijay with "Coming Soon" label */}
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={() => branch.delivery && setOrderType('delivery')}
+                      disabled={!branch.delivery}
+                      className={`w-full py-2 rounded-xl font-heading text-sm border-2 transition-colors ${
+                        !branch.delivery
+                          ? 'border-brew-brown/15 text-brew-brown/35 cursor-not-allowed'
+                          : orderType === 'delivery'
+                            ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                            : 'text-brew-brown border-brew-brown/30'
                       }`}
-                  >
-                    🛵 Delivery
-                  </button>
+                      style={!branch.delivery ? { opacity: 0.5 } : {}}
+                    >
+                      🛵 Delivery
+                      {!branch.delivery && (
+                        <span className="block font-body text-[9px] text-brew-brown/40 leading-tight">
+                          Coming Soon...
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
+                {!branch.delivery && (
+                  <p className="font-body text-xs text-amber-600 mt-1">
+                    ⚠️ Delivery is not yet available for the {branch.label} branch.
+                  </p>
+                )}
               </div>
 
               {orderType === 'delivery' && (

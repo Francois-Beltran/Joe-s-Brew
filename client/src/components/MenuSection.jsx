@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
 import FruitBlendCard from './FruitBlendCard'
 import AddonPicker from './AddonPicker'
+import { useBranch } from '../context/BranchContext'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -73,6 +74,7 @@ export default function MenuSection() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const sectionRef = useRef(null)
+  const { branch } = useBranch()
 
   useEffect(() => {
     async function fetchMenu() {
@@ -144,11 +146,47 @@ export default function MenuSection() {
             What we're serving
           </p>
           <h2 className="font-heading text-5xl md:text-6xl text-brew-brown">OUR MENU</h2>
+          <p className="font-body text-brew-brown/50 text-sm mt-2">
+            {branch.emoji} {branch.label} Branch
+            {branch.comingSoon && <span className="ml-2 text-amber-600 font-semibold">· Coming Soon</span>}
+            {!branch.delivery && !branch.comingSoon && <span className="ml-2 text-brew-brown/40">· Pickup Only</span>}
+          </p>
         </div>
 
         {loading ? (
           <div className="text-center py-20 font-heading text-3xl text-brew-brown/40 tracking-widest">
             BREWING...
+          </div>
+        ) : branch.comingSoon ? (
+          /* ── Loboc: Coming Soon overlay ──────────────────────────── */
+          <div className="relative rounded-3xl overflow-hidden min-h-[420px]">
+            {/* Blurred ghost of the menu beneath */}
+            <div className="pointer-events-none select-none" style={{ filter: 'blur(6px)', opacity: 0.4 }}>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                {items.slice(0, 8).map(item => (
+                  <div key={item.id} className="bg-brew-light rounded-2xl h-64" />
+                ))}
+              </div>
+            </div>
+            {/* Overlay notice */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-6"
+              style={{ background: 'rgba(245,236,215,0.55)', backdropFilter: 'blur(2px)' }}
+            >
+              <span className="text-6xl">{branch.emoji}</span>
+              <h3 className="font-heading text-4xl text-brew-brown tracking-wide">
+                {branch.label} Branch
+              </h3>
+              <p className="font-body text-brew-brown/70 text-lg">
+                We're brewing something special here.
+              </p>
+              <p className="font-heading text-brew-brown text-2xl tracking-widest">
+                COMING SOON...
+              </p>
+              <p className="font-body text-brew-brown/50 text-sm max-w-sm">
+                Online ordering for the Loboc branch is not yet available.
+                Please visit us in person or select a different branch above.
+              </p>
+            </div>
           </div>
         ) : (
           <div>

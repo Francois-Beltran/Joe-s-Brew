@@ -4,13 +4,32 @@ import { API_URL } from '../../lib/api'
 import { createAuthFetch } from '../../lib/authFetch'
 import InstallPrompt, { InstallButton } from '../../components/InstallPrompt'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { BRANCHES } from '../../context/BranchContext'
 
 const employeeFetch = createAuthFetch('joesbrew_employee_token')
+
+// Branch availability is scoped per-branch in branch_menu_availability table.
+// SQL migration (run once in Supabase SQL editor):
+//   CREATE TABLE IF NOT EXISTS branch_menu_availability (
+//     branch_id TEXT NOT NULL,
+//     menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+//     is_available BOOLEAN NOT NULL DEFAULT true,
+//     PRIMARY KEY (branch_id, menu_item_id)
+//   );
+async function fetchBranchAvailability(branchId) {
+    const { data } = await supabase
+        .from('branch_menu_availability')
+        .select('menu_item_id, is_available')
+        .eq('branch_id', branchId)
+    return Object.fromEntries((data ?? []).map(r => [r.menu_item_id, r.is_available]))
+}
 
 export default function EmployeeDashboard() {
     const [orders, setOrders] = useState([])
     const [activeTab, setActiveTab] = useState('pending')
     const [menuItems, setMenuItems] = useState([])
+    const [branchAvail, setBranchAvail] = useState({})   // { [menu_item_id]: boolean }
+    const [selectedBranch, setSelectedBranch] = useState('cogtong')
     const [loading, setLoading] = useState(true)
     const [fulfilling, setFulfilling] = useState(null)
     const [actionError, setActionError] = useState('')
@@ -31,12 +50,15 @@ export default function EmployeeDashboard() {
         setLoading(false)
     }
 
-    const fetchMenu = async () => {
-        const { data } = await supabase
-            .from('menu_items')
-            .select('id, name, price, price_grande, price_king, is_available, category, best_seller')
-            .order('category')
+    const fetchMenu = async (branchId = selectedBranch) => {
+        const [{ data }, avail] = await Promise.all([
+            supabase.from('menu_items')
+                .select('id, name, price, price_grande, price_king, is_available, category, best_seller')
+                .order('category'),
+            fetchBranchAvailability(branchId),
+        ])
         setMenuItems(data ?? [])
+        setBranchAvail(avail)
     }
 
     useEffect(() => {
@@ -107,17 +129,35 @@ export default function EmployeeDashboard() {
         }
     }
 
+    // Effective availability = branch override if it exists, else global
+    const effectiveAvail = (item) =>
+        item.id in branchAvail ? branchAvail[item.id] : item.is_available
+
     const toggleAvailability = async (item) => {
+        const current = effectiveAvail(item)
+        const next = !current
+        // Upsert into branch_menu_availability for the selected branch
         const { error } = await supabase
-            .from('menu_items')
-            .update({ is_available: !item.is_available })
-            .eq('id', item.id)
+            .from('branch_menu_availability')
+            .upsert({ branch_id: selectedBranch, menu_item_id: item.id, is_available: next },
+                { onConflict: 'branch_id,menu_item_id' })
         if (error) {
-            setActionError('Failed to update: ' + error.message)
+            // Fallback: table may not exist yet — update global availability
+            const { error: fallbackErr } = await supabase
+                .from('menu_items')
+                .update({ is_available: next })
+                .eq('id', item.id)
+            if (fallbackErr) { setActionError('Failed to update: ' + fallbackErr.message); return }
+            setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: next } : m))
             return
         }
-        setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: !m.is_available } : m))
+        setBranchAvail(prev => ({ ...prev, [item.id]: next }))
     }
+
+    // Reload branch availability when branch changes
+    useEffect(() => {
+        fetchBranchAvailability(selectedBranch).then(setBranchAvail)
+    }, [selectedBranch])
 
     const CATEGORY_ORDER = [
         'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe', 'Milk Tea',
@@ -151,9 +191,28 @@ export default function EmployeeDashboard() {
         <div className="min-h-screen bg-brew-beige p-6">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
-                        <div className="flex gap-2 items-center">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div>
+                            <h1 className="font-heading text-5xl text-brew-brown">ORDER DASHBOARD</h1>
+                            <p className="font-body text-brew-brown/60 mt-1 text-sm">
+                                {BRANCHES[selectedBranch]?.emoji} {BRANCHES[selectedBranch]?.label} Branch
+                            </p>
+                        </div>
+                        <div className="flex gap-2 items-center flex-wrap">
+                            {/* Branch switcher */}
+                            <div className="flex gap-1">
+                                {Object.values(BRANCHES).map(b => (
+                                    <button
+                                        key={b.id}
+                                        onClick={() => setSelectedBranch(b.id)}
+                                        className={`font-heading text-xs tracking-wider px-3 py-1.5 rounded-full border transition-colors ${selectedBranch === b.id
+                                            ? 'bg-brew-brown text-brew-beige border-brew-brown'
+                                            : 'text-brew-brown border-brew-brown/30 hover:border-brew-brown'}`}
+                                    >
+                                        {b.emoji} {b.label}
+                                    </button>
+                                ))}
+                            </div>
                             {pushStatus === 'idle' && (
                                 <button onClick={subscribePush} className="font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors">
                                     🔔 ENABLE ALERTS
@@ -314,12 +373,12 @@ export default function EmployeeDashboard() {
                                             </div>
                                             <button
                                                 onClick={() => toggleAvailability(item)}
-                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${item.is_available
+                                                className={`shrink-0 px-3 py-1.5 rounded-full font-heading text-xs tracking-wider whitespace-nowrap ${effectiveAvail(item)
                                                     ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800'
                                                     : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800'
                                                     }`}
                                             >
-                                                {item.is_available ? 'AVAILABLE' : 'UNAVAILABLE'}
+                                                {effectiveAvail(item) ? 'AVAILABLE' : 'UNAVAILABLE'}
                                             </button>
                                         </div>
                                     ))}

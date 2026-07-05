@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './hooks/useCart'
+import { BranchProvider } from './context/BranchContext'
 import AdminGuard from './components/AdminGuard'
 import Home from './pages/Home'
 import Dashboard from './pages/admin/Dashboard'
@@ -53,11 +54,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <TermsGate>
-      <CartProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </CartProvider>
+      <BranchProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </CartProvider>
+      </BranchProvider>
     </TermsGate>
   )
 
