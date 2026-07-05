@@ -146,21 +146,22 @@ export default function EmployeeDashboard() {
     const toggleAvailability = async (item) => {
         const current = effectiveAvail(item)
         const next = !current
-        // Upsert into branch_menu_availability for the selected branch
         const { error } = await supabase
             .from('branch_menu_availability')
-            .upsert({ branch_id: selectedBranch, menu_item_id: item.id, is_available: next },
-                { onConflict: 'branch_id,menu_item_id' })
+            .upsert(
+                { branch_id: selectedBranch, menu_item_id: item.id, is_available: next },
+                { onConflict: 'branch_id,menu_item_id' }
+            )
         if (error) {
-            // Fallback: table may not exist yet — update global availability
+            // Fallback: write to global menu_items if branch table unavailable
             const { error: fallbackErr } = await supabase
                 .from('menu_items')
                 .update({ is_available: next })
                 .eq('id', item.id)
             if (fallbackErr) { setActionError('Failed to update: ' + fallbackErr.message); return }
             setMenuItems(prev => prev.map(m => m.id === item.id ? { ...m, is_available: next } : m))
-            return
         }
+        // Always update branchAvail so effectiveAvail reflects the new state in the UI
         setBranchAvail(prev => ({ ...prev, [item.id]: next }))
     }
 
