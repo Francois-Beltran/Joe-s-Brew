@@ -17,6 +17,36 @@ function StarRating({ rating }) {
   )
 }
 
+// Per-image focal point overrides. Key = exact image filename, value = CSS object-position.
+// Defaults to "center center" if not listed here.
+const IMAGE_POSITION = {
+  'joes_dark_chocolate.png':        'center 30%',
+  'joes_white_coffee.png':          'center 40%',
+  'joes_cappucino.png':             'center 30%',
+  'joes_vanilla.png':               'center 30%',
+  'iced_cappucino.jpg':             'center 40%',
+  'joes_iced_mocha.png':            'center 30%',
+  'caramel_macchiato.jpg':          'center 40%',
+  'joes_iced_spanish_latte.jpg':    'center 40%',
+  'joe_s_iced_americano.jpg':       'center 40%',
+  'matcha_cream.jpg':               'center 30%',
+  'taro_frappe.jpg':                'center 30%',
+  'joes_mango_frappe.jpg':          'center 30%',
+  'cookies_and_cream_frappe.jpg':   'center 40%',
+  'joes_okinawa_mikltea.png':       'center 30%',
+  'joes_dark_chocolate_milktea.png':'center 30%',
+  'joes_wintermelon_milktea.png':   'center 30%',
+  'classic_takoyaki.jpg':           'center 50%',
+  'berry_whip_waffle.jpg':          'center 40%',
+  'nutella_waffle.jpg':             'center 40%',
+}
+
+function getImagePosition(imageUrl) {
+  if (!imageUrl) return 'center center'
+  const filename = imageUrl.split('/').pop()
+  return IMAGE_POSITION[filename] ?? 'center center'
+}
+
 export default function MenuCard({ item }) {
 
   const { addItem, cart } = useCart()
@@ -100,6 +130,7 @@ export default function MenuCard({ item }) {
             src={item.image_url}
             alt={item.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+            style={{ objectPosition: getImagePosition(item.image_url) }}
           />
         </div>
       ) : (
