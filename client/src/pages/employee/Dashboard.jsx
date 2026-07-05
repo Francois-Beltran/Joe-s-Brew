@@ -40,10 +40,11 @@ export default function EmployeeDashboard() {
 
     const SIZE_LABEL = { base: 'Medio', grande: 'Grande', king: 'King' }
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (branchId = selectedBranch) => {
         const { data } = await supabase
             .from('orders')
             .select('*, order_items(quantity, unit_price, size, base_type, menu_items(name, category))')
+            .eq('branch_id', branchId)
             .in('status', ['paid', 'ready'])
             .order('created_at', { ascending: true })
         setOrders(data ?? [])
@@ -62,15 +63,21 @@ export default function EmployeeDashboard() {
     }
 
     useEffect(() => {
-        fetchOrders()
-        fetchMenu()
-            if ('Notification' in window && Notification.permission === 'default') {
+        if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission()
         }
+        fetchMenu()
+    }, [])
+
+    // Re-fetch and re-subscribe to Realtime whenever the selected branch changes
+    useEffect(() => {
+        setLoading(true)
+        fetchOrders(selectedBranch)
 
         const channel = supabase
-            .channel('employee-orders')
+            .channel(`employee-orders-${selectedBranch}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+                if (payload.new?.branch_id !== selectedBranch) return
                 if (payload.new?.status === 'paid') {
                     if ('Notification' in window && Notification.permission === 'granted') {
                         new Notification('New Order Ready to Fulfill! ☕', {
@@ -79,12 +86,15 @@ export default function EmployeeDashboard() {
                         })
                     }
                 }
-                fetchOrders()
+                fetchOrders(selectedBranch)
             })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => fetchOrders())
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                if (payload.new?.branch_id !== selectedBranch) return
+                fetchOrders(selectedBranch)
+            })
             .subscribe()
         return () => supabase.removeChannel(channel)
-    }, [])
+    }, [selectedBranch])
 
     useEffect(() => {
         fetch(`${API_URL}/api/shop/status`)

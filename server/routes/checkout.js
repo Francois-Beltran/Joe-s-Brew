@@ -19,7 +19,7 @@ const upload = multer({
  * Validates inputs, checks item availability, uploads receipt screenshot, and creates order
  */
 router.post('/', upload.single('screenshot'), async (req, res) => {
-  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms, deliveryLat, deliveryLng } = req.body
+  const { items: itemsRaw, customerName, gcashRef, customerPhone, orderType, sitio, landmark, agreedToTerms, deliveryLat, deliveryLng, branchId } = req.body
   const screenshotFile = req.file
 
   try {
@@ -263,6 +263,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
           : null,
         delivery_lat: orderType === 'delivery' && deliveryLat ? Number(deliveryLat) : null,
         delivery_lng: orderType === 'delivery' && deliveryLng ? Number(deliveryLng) : null,
+        branch_id: branchId || 'cogtong',
       })
       .select()
       .single()

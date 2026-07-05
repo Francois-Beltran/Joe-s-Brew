@@ -7,18 +7,14 @@ const router = express.Router()
 router.use(express.json())
 
 // ============================================================
-// Fetches all admin contacts; only the one with is_sender=true
-// is used as the FROM/target for SMS notifications sent by the gateway.
-// Other admins are recorded for reference but do not receive SMS directly
-// (the SMS gateway only sends to one number per message in this setup).
+// Co-Admin notification registry — receives SMS on every order event
+// (verify / reject / fulfill). Outbound sender is the Android device
+// running sms-gate.app with SIM number 09241913950.
 // ============================================================
-async function getSmsAdminPhone() {
-  const { data } = await supabaseAdmin
-    .from('admin_contacts')
-    .select('phone')
-    .eq('is_sender', true)
-    .maybeSingle()
-  return data?.phone || process.env.ADMIN_PHONE_NUMBER // fallback to env var if table is empty
+const CO_ADMIN_PHONES = ['09653280300', '09275165980', '09173011678']
+
+async function sendSMSToCoAdmins(message) {
+  return Promise.allSettled(CO_ADMIN_PHONES.map(phone => sendSMS(phone, message)))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,10 +137,8 @@ router.post('/verify', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to verify order' })
     }
 
-    // 🔔 TO CHANGE ADMIN NOTIFICATION: update ADMIN_PHONE_NUMBER in server/.env
     try {
-      await sendSMS(
-        await getSmsAdminPhone(),
+      await sendSMSToCoAdmins(
         toPlainText(
           `✅ Payment Verified\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
@@ -154,8 +148,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
         )
       )
     } catch (smsErr) {
-      // Non-critical: order is still verified even if SMS fails
-      console.error('Admin SMS notify error (verify):', smsErr.message)
+      console.error('Co-admin SMS notify error (verify):', smsErr.message)
     }
 
     // Notify customer that payment was received and order is being prepared
@@ -234,10 +227,8 @@ router.post('/reject', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to reject order' })
     }
 
-    // Notify admin via SMS
     try {
-      await sendSMS(
-        await getSmsAdminPhone(),
+      await sendSMSToCoAdmins(
         toPlainText(
           `❌ Order Rejected\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
@@ -246,8 +237,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
         )
       )
     } catch (smsErr) {
-      // Non-critical
-      console.error('Admin SMS notify error (reject):', smsErr.message)
+      console.error('Co-admin SMS notify error (reject):', smsErr.message)
     }
 
     // Notify customer via SMS if phone number is available
@@ -304,10 +294,8 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to update order status' })
     }
 
-    // Notify admin via SMS
     try {
-      await sendSMS(
-        await getSmsAdminPhone(),
+      await sendSMSToCoAdmins(
         toPlainText(
           `☕ Order Marked Ready\n\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
@@ -316,8 +304,7 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
         )
       )
     } catch (smsErr) {
-      // Non-critical
-      console.error('Admin SMS notify error (fulfill):', smsErr.message)
+      console.error('Co-admin SMS notify error (fulfill):', smsErr.message)
     }
 
     // Notify customer via SMS if phone number is available

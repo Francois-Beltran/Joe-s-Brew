@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useCart } from '../hooks/useCart';
 import { API_URL } from '../lib/api';
 import GCashModal from './GCashModal';
+import { useBranch } from '../context/BranchContext';
 
 /**
  * Shopping cart drawer component
@@ -13,6 +14,7 @@ import GCashModal from './GCashModal';
  */
 export default function Cart({ onClose }) {
   const { cart, removeItem, updateQty } = useCart()
+  const { branch } = useBranch()
   const [showGCash, setShowGCash] = useState(false)
 
   const displayTotal = cart.reduce((s, i) => s + i.displayPrice * i.quantity, 0)
@@ -129,9 +131,15 @@ export default function Cart({ onClose }) {
                   </p>
                 )}
 
+                {branch.comingSoon && (
+                  <p className="font-body text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3 text-center mb-2">
+                    🚧 The {branch.label} branch is coming soon — ordering is not yet available.
+                  </p>
+                )}
+
                 <button
                   onClick={() => setShowGCash(true)}
-                  disabled={!shopOpen}
+                  disabled={!shopOpen || branch.comingSoon}
                   className="w-full bg-[#0070C0] text-white font-heading tracking-widest text-lg py-4 rounded-xl hover:bg-[#005a9e] transition-colors flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <span className="text-2xl">💙</span>

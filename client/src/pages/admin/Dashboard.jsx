@@ -93,11 +93,12 @@ export default function Dashboard() {
 
   const SIZE_LABEL = { base: 'Medio', grande: 'Grande', king: 'King' }
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (branchId = selectedBranch) => {
     try {
       const { data, error } = await supabase
         .from('orders')
         .select('*, order_items(quantity, unit_price, size, base_type, menu_items(name, category))')
+        .eq('branch_id', branchId)
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -131,30 +132,36 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetchOrders()
-
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
+  }, [])
+
+  // Re-fetch and re-subscribe to Realtime whenever the selected branch changes
+  useEffect(() => {
+    setLoading(true)
+    fetchOrders(selectedBranch)
 
     const channel = supabase
-      .channel('admin-orders')
+      .channel(`admin-orders-${selectedBranch}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-        console.log('🔔 New order detected:', payload.new)
-
+        if (payload.new?.branch_id !== selectedBranch) return
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('New Order Received! ☕', {
             body: `Order from ${payload.new.customer_name || 'a customer'} — ₱${Number(payload.new.total_amount).toFixed(2)}`,
             icon: '/images/admin-icon-192.png',
           })
         }
-        fetchOrders()
+        fetchOrders(selectedBranch)
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.new?.branch_id !== selectedBranch) return
+        fetchOrders(selectedBranch)
+      })
       .subscribe()
 
     return () => supabase.removeChannel(channel)
-  }, [])
+  }, [selectedBranch])
 
   const verifyOrder = async (order) => {
     setVerifying(order.id)
