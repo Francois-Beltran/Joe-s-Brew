@@ -75,13 +75,7 @@ export default function FruitBlendCard({ item }) {
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full border ${isUnavailable ? 'grayscale' : ''}`}
-      style={{
-        background: 'rgba(255,255,255,0.72)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
-        borderColor: 'rgba(213,188,158,0.45)',
-      }}
+      className={`bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full ${isUnavailable ? 'grayscale' : ''}`}
     >
       {/* Badges */}
       {item.best_seller && !isUnavailable && (
@@ -103,18 +97,9 @@ export default function FruitBlendCard({ item }) {
             alt={item.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
-          {/* Frosted shimmer at bottom of image */}
-          <div
-            className="absolute bottom-0 left-0 right-0 h-10"
-            style={{
-              background: 'linear-gradient(to top, rgba(255,255,255,0.55), transparent)',
-            }}
-          />
         </div>
       ) : (
-        <div className="w-full h-44 flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(74,37,17,0.08)' }}
-        >
+        <div className="w-full h-44 bg-brew-brown/20 flex items-center justify-center shrink-0">
           <span className="text-4xl">🧋</span>
         </div>
       )}
