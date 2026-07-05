@@ -275,7 +275,7 @@ export default function MenuSection() {
                       ))}
                     </div>
                     {/* Desktop: grid */}
-                    <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                    <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {fruitBlendItems.map(item => (
                         <div key={item.id} className="menu-card">
                           <FruitBlendCard item={item} />
