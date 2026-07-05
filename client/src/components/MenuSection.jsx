@@ -4,17 +4,32 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { supabase } from '../lib/supabaseClient'
 import MenuCard from './MenuCard'
 import FruitBlendCard from './FruitBlendCard'
-import AddonPicker from './AddonPicker'
 import { useBranch } from '../context/BranchContext'
 
 gsap.registerPlugin(ScrollTrigger)
 
 // Categories that get horizontal swipe on mobile
-// Desktop always shows grid
 const SWIPE_CATEGORIES = [
   'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
   'Milk Tea', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
 ]
+
+// Local image overrides for Fruit Blend items (keyed by lowercase keyword in item name)
+const FRUIT_BLEND_IMAGES = {
+  wintermelon:    '/images/wintermelon_fruitblend.JPEG',
+  blueberry:      '/images/blueberry_fruitblend.JPEG',
+  'four seasons': '/images/four_seasons_fruitblend.JPEG',
+  mango:          '/images/mango_fruitblend.JPEG',
+  lychee:         '/images/lychee_fruitblend.JPEG',
+}
+
+function getFruitBlendImage(name) {
+  const lower = name.toLowerCase()
+  for (const [key, path] of Object.entries(FRUIT_BLEND_IMAGES)) {
+    if (lower.includes(key)) return path
+  }
+  return null
+}
 
 function SwipeRow({ items, categoryName }) {
   const scrollRef = useRef(null)
@@ -32,10 +47,7 @@ function SwipeRow({ items, categoryName }) {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {items.map(item => (
-          <div
-            key={item.id}
-            className="menu-card shrink-0 w-64 snap-start"
-          >
+          <div key={item.id} className="menu-card shrink-0 w-64 snap-start">
             <MenuCard item={item} />
           </div>
         ))}
@@ -73,23 +85,47 @@ function GridSection({ items, categoryName }) {
 export default function MenuSection() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  // Per-branch availability overrides: { [menu_item_id]: boolean }
+  const [branchAvail, setBranchAvail] = useState({})
   const sectionRef = useRef(null)
   const { branch } = useBranch()
 
+  // Fetch all menu items once
   useEffect(() => {
     async function fetchMenu() {
-      // Fetch ALL items regardless of availability — unavailable items are still shown
-      // to customers (marked clearly), just not addable to cart. See MenuCard.jsx.
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
         .order('category')
-
       if (!error) setItems(data ?? [])
       setLoading(false)
     }
     fetchMenu()
   }, [])
+
+  // Fetch branch-scoped availability overrides whenever the branch changes
+  useEffect(() => {
+    if (branch.comingSoon) {
+      setBranchAvail({})
+      return
+    }
+    async function fetchBranchAvail() {
+      const { data } = await supabase
+        .from('branch_menu_availability')
+        .select('menu_item_id, is_available')
+        .eq('branch_id', branch.id)
+      setBranchAvail(
+        Object.fromEntries((data ?? []).map(r => [r.menu_item_id, r.is_available]))
+      )
+    }
+    fetchBranchAvail()
+  }, [branch.id, branch.comingSoon])
+
+  // Merge branch overrides into items — branch row wins over global is_available
+  const effectiveItems = items.map(item => ({
+    ...item,
+    is_available: item.id in branchAvail ? branchAvail[item.id] : item.is_available,
+  }))
 
   useEffect(() => {
     if (!loading) {
@@ -114,21 +150,19 @@ export default function MenuSection() {
     }
   }, [loading])
 
-  // Group items by category, preserving a sensible order
   const CATEGORY_ORDER = [
     'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
     'Milk Tea', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
   ]
 
-  const grouped = items.reduce((acc, item) => {
-    if (item.category === 'Add-ons') return acc;
+  const grouped = effectiveItems.reduce((acc, item) => {
+    if (item.category === 'Add-ons') return acc
     const cat = item.category || 'Other'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(item)
     return acc
   }, {})
 
-  // Sort categories by preferred order, unknown ones go at the end
   const sortedCategories = Object.keys(grouped).sort((a, b) => {
     const ai = CATEGORY_ORDER.indexOf(a)
     const bi = CATEGORY_ORDER.indexOf(b)
@@ -160,7 +194,6 @@ export default function MenuSection() {
         ) : branch.comingSoon ? (
           /* ── Loboc: Coming Soon overlay ──────────────────────────── */
           <div className="relative rounded-3xl overflow-hidden min-h-[420px]">
-            {/* Blurred ghost of the menu beneath */}
             <div className="pointer-events-none select-none" style={{ filter: 'blur(6px)', opacity: 0.4 }}>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
                 {items.slice(0, 8).map(item => (
@@ -168,8 +201,8 @@ export default function MenuSection() {
                 ))}
               </div>
             </div>
-            {/* Overlay notice */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-6"
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-6"
               style={{ background: 'rgba(245,236,215,0.55)', backdropFilter: 'blur(2px)' }}
             >
               <span className="text-6xl">{branch.emoji}</span>
@@ -191,13 +224,12 @@ export default function MenuSection() {
         ) : (
           <div>
             {sortedCategories.map(category => {
-              const categoryItems = grouped[category];
+              const categoryItems = grouped[category]
 
               if (category === 'Frappe') {
                 const coffeeBase = categoryItems.filter(i => i.subcategory === 'Coffee Base')
                 const creamBase = categoryItems.filter(i => i.subcategory === 'Cream Base')
                 const other = categoryItems.filter(i => !i.subcategory)
-
                 return (
                   <div key={category}>
                     {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} />}
@@ -206,8 +238,6 @@ export default function MenuSection() {
                   </div>
                 )
               }
-
-              const isSwipeCategory = SWIPE_CATEGORIES.includes(category)
 
               if (category === 'Milk Tea') {
                 return (
@@ -218,20 +248,35 @@ export default function MenuSection() {
               }
 
               if (category === 'Fruit Blend') {
+                // Filter out Peach and apply local image overrides
+                const fruitBlendItems = categoryItems
+                  .filter(item => !item.name.toLowerCase().includes('peach'))
+                  .map(item => {
+                    const localImg = getFruitBlendImage(item.name)
+                    return localImg ? { ...item, image_url: localImg } : item
+                  })
+
+                if (fruitBlendItems.length === 0) return null
+
                 return (
                   <div key={category} className="mb-10">
                     <h3 className="font-heading text-2xl text-brew-brown mb-4 px-4 md:px-0 tracking-wide">
                       FRUIT BLEND
                     </h3>
-                    <div className="flex md:hidden gap-4 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide">
-                      {categoryItems.map(item => (
+                    {/* Mobile: horizontal swipe */}
+                    <div
+                      className="flex md:hidden gap-4 overflow-x-auto pb-3 px-4 snap-x snap-mandatory scrollbar-hide"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      {fruitBlendItems.map(item => (
                         <div key={item.id} className="menu-card shrink-0 w-64 snap-start">
                           <FruitBlendCard item={item} />
                         </div>
                       ))}
                     </div>
-                    <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {categoryItems.map(item => (
+                    {/* Desktop: grid */}
+                    <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                      {fruitBlendItems.map(item => (
                         <div key={item.id} className="menu-card">
                           <FruitBlendCard item={item} />
                         </div>
@@ -241,7 +286,7 @@ export default function MenuSection() {
                 )
               }
 
-              return isSwipeCategory ? (
+              return SWIPE_CATEGORIES.includes(category) ? (
                 <SwipeRow key={category} categoryName={category} items={categoryItems} />
               ) : (
                 <GridSection key={category} categoryName={category} items={categoryItems} />

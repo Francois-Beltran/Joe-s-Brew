@@ -45,7 +45,7 @@ export default function FruitBlendCard({ item }) {
   const cartKey = `${item.id}_${selectedBase}`
   const inCart = cart.find(i => i.menuItemId === cartKey && i.size === selectedSize)
 
-  // Item is unavailable if menu_items.is_available is false OR no variants are available
+  // Respects branch-scoped is_available passed down via item prop from MenuSection
   const isUnavailable = !item.is_available || variants.length === 0
 
   const handleAdd = () => {
@@ -74,8 +74,15 @@ export default function FruitBlendCard({ item }) {
   }
 
   return (
-    <div className={`bg-brew-light rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full ${isUnavailable ? 'grayscale' : ''}`}>
-
+    <div
+      className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative h-full border ${isUnavailable ? 'grayscale' : ''}`}
+      style={{
+        background: 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        borderColor: 'rgba(213,188,158,0.45)',
+      }}
+    >
       {/* Badges */}
       {item.best_seller && !isUnavailable && (
         <div className="absolute top-3 left-3 z-10 bg-amber-400 text-amber-900 font-heading text-xs tracking-wider px-3 py-1 rounded-full shadow">
@@ -96,9 +103,18 @@ export default function FruitBlendCard({ item }) {
             alt={item.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
+          {/* Frosted shimmer at bottom of image */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-10"
+            style={{
+              background: 'linear-gradient(to top, rgba(255,255,255,0.55), transparent)',
+            }}
+          />
         </div>
       ) : (
-        <div className="w-full h-44 bg-brew-brown/20 flex items-center justify-center shrink-0">
+        <div className="w-full h-44 flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(74,37,17,0.08)' }}
+        >
           <span className="text-4xl">🧋</span>
         </div>
       )}
@@ -111,7 +127,7 @@ export default function FruitBlendCard({ item }) {
           </span>
         </div>
 
-        {/* Base type selector — Aqua / Tea / Seltzer */}
+        {/* Base type selector */}
         {!isUnavailable && variants.length > 0 && (
           <div className="mb-3">
             <p className="font-body text-xs text-brew-brown/60 mb-1">Choose your base:</p>
@@ -133,7 +149,7 @@ export default function FruitBlendCard({ item }) {
           </div>
         )}
 
-        {/* Size selector — Medio / Grande */}
+        {/* Size selector */}
         {!isUnavailable && currentVariant?.price_grande && (
           <div className="flex gap-2 mb-3">
             <button
@@ -159,7 +175,7 @@ export default function FruitBlendCard({ item }) {
           </div>
         )}
 
-        {/* Inline add-on picker — mirrors MenuCard structure */}
+        {/* Add-on picker */}
         {!isUnavailable && addons.length > 0 && (
           <div className="mb-3">
             <p className="font-heading text-[10px] text-brew-brown/60 mb-1 tracking-widest">ADD-ONS</p>
@@ -171,7 +187,7 @@ export default function FruitBlendCard({ item }) {
                   className={`px-3 py-1 rounded-lg text-[11px] font-heading border transition-colors ${
                     selectedAddon?.id === addon.id
                       ? 'bg-brew-brown text-brew-beige border-brew-brown'
-                      : 'bg-brew-beige/50 text-brew-brown border-brew-brown/20 hover:border-brew-brown'
+                      : 'bg-white/50 text-brew-brown border-brew-brown/20 hover:border-brew-brown'
                   }`}
                 >
                   {addon.name} (+₱{Number(addon.price).toFixed(0)})
