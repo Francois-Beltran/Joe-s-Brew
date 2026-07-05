@@ -139,9 +139,9 @@ export default function EmployeeDashboard() {
         }
     }
 
-    // Effective availability = branch override if it exists, else global
+    // Effective availability = branch override if it exists, else true (COALESCE default)
     const effectiveAvail = (item) =>
-        item.id in branchAvail ? branchAvail[item.id] : item.is_available
+        item.id in branchAvail ? branchAvail[item.id] : true
 
     const toggleAvailability = async (item) => {
         const current = effectiveAvail(item)

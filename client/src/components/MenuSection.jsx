@@ -121,10 +121,10 @@ export default function MenuSection() {
     fetchBranchAvail()
   }, [branch.id, branch.comingSoon])
 
-  // Merge branch overrides into items — branch row wins over global is_available
+  // Merge branch overrides: branch row wins; absent = available by default (COALESCE true)
   const effectiveItems = items.map(item => ({
     ...item,
-    is_available: item.id in branchAvail ? branchAvail[item.id] : item.is_available,
+    is_available: item.id in branchAvail ? branchAvail[item.id] : true,
   }))
 
   useEffect(() => {
