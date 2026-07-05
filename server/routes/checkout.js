@@ -100,7 +100,23 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: 'One or more items not found' })
     }
 
-    const unavailable = dbItems.filter(i => !i.is_available)
+    // Branch-scoped availability: COALESCE(branch_override, true)
+    // Matches the same logic used on the frontend — no branch row means available by default
+    let branchAvailMap = {}
+    if (uniqueRegularIds.length > 0 && branchId) {
+      const { data: branchAvailRows } = await supabaseAdmin
+        .from('branch_menu_availability')
+        .select('menu_item_id, is_available')
+        .eq('branch_id', branchId)
+        .in('menu_item_id', uniqueRegularIds)
+      if (branchAvailRows) {
+        branchAvailMap = Object.fromEntries(branchAvailRows.map(r => [r.menu_item_id, r.is_available]))
+      }
+    }
+
+    const unavailable = dbItems.filter(i =>
+      i.id in branchAvailMap ? !branchAvailMap[i.id] : false
+    )
     if (unavailable.length > 0) {
       return res.status(400).json({
         error: 'Some items are unavailable',
