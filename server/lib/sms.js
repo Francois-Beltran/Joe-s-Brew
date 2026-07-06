@@ -54,12 +54,25 @@ export async function sendSMS(phoneNumber, message) {
   return rawText ? JSON.parse(rawText) : { status: res.status }
 }
 
-// Send the same message to every recipient on the notify list in parallel.
-// Each number gets its own request — sms-gate.app handles them concurrently,
-// so total time ≈ one request (~850ms) instead of N × 850ms sequentially.
+// Send to admins + branch phone. Use only for payment VERIFIED notifications.
 export async function sendSMSToNotifyList(branchId, message) {
   const phones = buildNotifyList(branchId)
   console.log(`[SMS] Dispatching to ${phones.length} recipient(s) (branch: ${branchId}):`, phones)
+  await Promise.allSettled(phones.map(async phone => {
+    try {
+      await sendSMS(phone, message)
+      console.log(`[SMS] ✓ Delivered to ${toE164(phone)}`)
+    } catch (err) {
+      console.error(`[SMS] ✗ Failed for ${toE164(phone)}:`, err.message)
+    }
+  }))
+}
+
+// Send to admins only — no branch phone.
+// Use for new orders, rejections, and fulfillments.
+export async function sendSMSToAdmins(message) {
+  const phones = getAdminPhones()
+  console.log(`[SMS] Dispatching to ${phones.length} admin(s):`, phones)
   await Promise.allSettled(phones.map(async phone => {
     try {
       await sendSMS(phone, message)

@@ -1,7 +1,7 @@
 import express from 'express'
 import { supabaseAdmin } from '../lib/supabaseAdmin.js'
 import { validateAdmin } from '../middleware/validateAdmin.js'
-import { sendSMS, sendSMSToNotifyList } from '../lib/sms.js'
+import { sendSMS, sendSMSToNotifyList, sendSMSToAdmins } from '../lib/sms.js'
 
 const router = express.Router()
 router.use(express.json())
@@ -170,8 +170,7 @@ router.post('/reject', validateAdmin, async (req, res) => {
     }
 
     try {
-      await sendSMSToNotifyList(
-        order.branch_id,
+      await sendSMSToAdmins(
         toPlainText(
           `❌ Order Rejected\n\n` +
           `Branch: ${(order.branch_id || 'cogtong').toUpperCase()}\n` +

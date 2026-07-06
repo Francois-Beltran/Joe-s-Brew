@@ -1,7 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { supabaseAdmin } from '../lib/supabaseAdmin.js'
-import { sendSMSToNotifyList } from '../lib/sms.js'
+import { sendSMSToAdmins } from '../lib/sms.js'
 
 const router = express.Router()
 
@@ -325,12 +325,11 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
     }
 
-    // Notify all admins + branch phone of new order
+    // Notify admins only of new order (branch phones only get verified notification)
     try {
       const branch = (branchId || 'cogtong').toUpperCase()
       const typeLabel = orderType === 'delivery' ? '🛵 DELIVERY' : '🏪 PICKUP'
-      await sendSMSToNotifyList(
-        branchId || 'cogtong',
+      await sendSMSToAdmins(
         `🔔 NEW ORDER — ${branch}\n\n` +
         `${typeLabel}\n` +
         `Customer: ${customerName.trim()}\n` +
