@@ -43,7 +43,7 @@ export default function EmployeeDashboard() {
     const fetchOrders = async (branchId = selectedBranch) => {
         const { data } = await supabase
             .from('orders')
-            .select('*, order_items(quantity, unit_price, size, base_type, menu_items(name, category))')
+            .select('*, order_items(quantity, unit_price, size, base_type, sort_order, menu_items(name, category))')
             .eq('branch_id', branchId)
             .in('status', ['paid', 'ready'])
             .order('created_at', { ascending: true })
@@ -341,7 +341,7 @@ export default function EmployeeDashboard() {
                                         )}
 
                                         <ul className="mb-3 space-y-1">
-                                            {order.order_items?.map((oi, i) => {
+                                            {[...(order.order_items ?? [])].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)).map((oi, i) => {
                                                 const isAddon = oi.menu_items?.category === 'Add-ons'
                                                 const sizeTag = !isAddon && oi.size && oi.size !== 'base'
                                                     ? ` · ${SIZE_LABEL[oi.size] ?? oi.size}`

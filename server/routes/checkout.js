@@ -1,6 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { supabaseAdmin } from '../lib/supabaseAdmin.js'
+import { sendSMSToNotifyList } from '../lib/sms.js'
 
 const router = express.Router()
 
@@ -79,8 +80,9 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
     // `actualMenuItemId` (the real menu_items.id, since menuItemId
     // for these is a composite cart key like "uuid_Aqua Infused")
     // ============================================================
-    const fruitBlendItems = items.filter(i => i.baseType)
-    const regularItems = items.filter(i => !i.baseType)
+    const itemsWithIndex = items.map((item, idx) => ({ ...item, cartIndex: idx }))
+    const fruitBlendItems = itemsWithIndex.filter(i => i.baseType)
+    const regularItems = itemsWithIndex.filter(i => !i.baseType)
 
     // Fetch authoritative prices for regular menu items
     // Deduplicate IDs: the same item can appear multiple times (different sizes, add-ons)
@@ -295,6 +297,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
         menu_item_id: i.menuItemId,
         quantity: i.quantity,
         size: i.size || 'base',
+        sort_order: i.cartIndex,
         unit_price:
           i.size === 'king' ? priceMap[i.menuItemId].king :
             i.size === 'grande' ? priceMap[i.menuItemId].grande :
@@ -310,6 +313,7 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
           quantity: i.quantity,
           size: i.size || 'base',
           base_type: i.baseType,
+          sort_order: i.cartIndex,
           unit_price: i.size === 'grande' ? (variant.price_grande ?? variant.price) : variant.price,
         }
       }),
@@ -319,6 +323,24 @@ router.post('/', upload.single('screenshot'), async (req, res) => {
 
     if (itemsError) {
       return res.status(500).json({ error: 'Failed to save order items', detail: itemsError.message })
+    }
+
+    // Notify all admins + branch phone of new order
+    try {
+      const branch = (branchId || 'cogtong').toUpperCase()
+      const typeLabel = orderType === 'delivery' ? '🛵 DELIVERY' : '🏪 PICKUP'
+      await sendSMSToNotifyList(
+        branchId || 'cogtong',
+        `🔔 NEW ORDER — ${branch}\n\n` +
+        `${typeLabel}\n` +
+        `Customer: ${customerName.trim()}\n` +
+        `Order: #${order.id.slice(0, 8).toUpperCase()}\n` +
+        `GCash Ref: ${gcashRef}\n` +
+        `Amount: PHP ${totalAmount.toFixed(2)}\n\n` +
+        `Please verify the payment in the Admin Dashboard.`
+      )
+    } catch (smsErr) {
+      console.error('New-order SMS notify error:', smsErr.message)
     }
 
     res.json({

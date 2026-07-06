@@ -2,66 +2,10 @@ import express from 'express'
 import { supabaseAdmin } from '../lib/supabaseAdmin.js'
 import { validateAdmin } from '../middleware/validateAdmin.js'
 import { sendPushToRole } from './push.js'
+import { sendSMS, sendSMSToNotifyList } from '../lib/sms.js'
 
 const router = express.Router()
 router.use(express.json())
-
-// ============================================================
-// Co-Admin notification registry — receives SMS on every order event.
-// Outbound sender is the Android device running sms-gate.app (09241913950).
-// ============================================================
-const CO_ADMIN_PHONES = ['09653280300', '09275165980', '09173011678']
-
-// Branch-specific phones — prepended to the notify list per order's branch
-const BRANCH_PHONES = {
-  cogtong:  '09936040934',
-  candijay: '09928125498',
-}
-
-// Builds full notify list: branch phone (if mapped) + all co-admin phones
-function buildNotifyList(branchId) {
-  const phones = [...CO_ADMIN_PHONES]
-  const branchPhone = BRANCH_PHONES[branchId]
-  if (branchPhone && !phones.includes(branchPhone)) phones.unshift(branchPhone)
-  return phones
-}
-
-async function sendSMSToNotifyList(branchId, message) {
-  return Promise.allSettled(buildNotifyList(branchId).map(phone => sendSMS(phone, message)))
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATION HELPER
-// SMS Gateway: sms-gate.app (Android app)
-// TO CHANGE SMS GATEWAY: update SMS_GATEWAY_URL and SMS_API_KEY in server/.env
-// SMS_API_KEY format: "username:password" (from the sms-gate.app Android app)
-// ─────────────────────────────────────────────────────────────────────────────
-async function sendSMS(phoneNumber, message) {
-  const url = process.env.SMS_GATEWAY_URL
-
-  // sms-gate.app uses HTTP Basic Auth with username:password
-  const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${basicAuth}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      phoneNumbers: [phoneNumber],
-      message:      message,
-    }),
-  })
-
-  // sms-gate.app returns 202 Accepted on success — read as text first to avoid
-  // JSON parse errors on empty bodies
-  const rawText = await res.text()
-  if (!res.ok) {
-    throw new Error(`SMS Gateway error: ${rawText}`)
-  }
-  return rawText ? JSON.parse(rawText) : { status: res.status }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Strips HTML tags from Telegram-style messages to plain text for SMS
