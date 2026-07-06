@@ -8,7 +8,7 @@ export default function FruitBlendCard({ item, branchAvail = {} }) {
   const [variants, setVariants] = useState([])
   const [selectedBase, setSelectedBase] = useState('')
   const [selectedSize, setSelectedSize] = useState('base')
-  const [addons, setAddons] = useState([])
+  const [allAddons, setAllAddons] = useState([])
   const [selectedAddon, setSelectedAddon] = useState(null)
 
   useEffect(() => {
@@ -32,14 +32,15 @@ export default function FruitBlendCard({ item, branchAvail = {} }) {
         .eq('category', 'Add-ons')
         .ilike('addon_for', '%Fruit Blend%')
         .eq('is_available', true)
-      // Also filter by branch-specific availability (COALESCE: absent row = available)
-      const available = (data ?? []).filter(
-        addon => addon.id in branchAvail ? branchAvail[addon.id] : true
-      )
-      setAddons(available)
+      setAllAddons(data ?? [])
     }
     fetchAddons()
-  }, [branchAvail])
+  }, [])
+
+  // Filter by branch availability at render time — avoids stale-closure race condition
+  const addons = allAddons.filter(
+    addon => addon.id in branchAvail ? branchAvail[addon.id] : true
+  )
 
   const currentVariant = variants.find(v => v.base_type === selectedBase)
   const displayPrice = currentVariant

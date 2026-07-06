@@ -73,7 +73,7 @@ function getImageStyle(imageUrl) {
 export default function MenuCard({ item, branchAvail = {} }) {
 
   const { addItem, cart } = useCart()
-  const [addons, setAddons] = useState([])
+  const [allAddons, setAllAddons] = useState([])
   const [selectedAddon, setSelectedAddon] = useState(null)
   
   const hasGrande = item.price_grande != null
@@ -102,14 +102,15 @@ export default function MenuCard({ item, branchAvail = {} }) {
         .eq('category', 'Add-ons')
         .ilike('addon_for', `%${item.category}%`)
         .eq('is_available', true)
-      // Also filter by branch-specific availability (COALESCE: absent row = available)
-      const available = (data ?? []).filter(
-        addon => addon.id in branchAvail ? branchAvail[addon.id] : true
-      )
-      setAddons(available)
+      setAllAddons(data ?? [])
     }
     if (item.category) fetchAddons()
-  }, [item.category, branchAvail])
+  }, [item.category])
+
+  // Filter by branch availability at render time — avoids stale-closure race condition
+  const addons = allAddons.filter(
+    addon => addon.id in branchAvail ? branchAvail[addon.id] : true
+  )
 
   const handleAdd = () => {
     // Add the main item
