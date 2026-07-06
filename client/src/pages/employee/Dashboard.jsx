@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 import { createAuthFetch } from '../../lib/authFetch'
-import InstallPrompt, { InstallButton } from '../../components/InstallPrompt'
-import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BRANCHES } from '../../context/BranchContext'
 
 const employeeFetch = createAuthFetch('joesbrew_employee_token')
@@ -36,8 +34,6 @@ export default function EmployeeDashboard() {
 
     const [shopOpen, setShopOpen] = useState(true)
     const [togglingShop, setTogglingShop] = useState(false)
-    const { status: pushStatus, subscribe: subscribePush } = usePushNotifications('employee')
-
     const SIZE_LABEL = { base: 'Medio', grande: 'Grande', king: 'King' }
 
     const fetchOrders = async (branchId = selectedBranch) => {
@@ -224,15 +220,6 @@ export default function EmployeeDashboard() {
                                     </button>
                                 ))}
                             </div>
-                            {pushStatus === 'idle' && (
-                                <button onClick={subscribePush} className="font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors">
-                                    🔔 ENABLE ALERTS
-                                </button>
-                            )}
-                            {pushStatus === 'subscribed' && (
-                                <span className="font-heading text-xs text-green-700 px-3 py-1 rounded-full bg-green-100">🔔 ALERTS ON</span>
-                            )}
-                            <InstallButton context="employee" />
                         </div>
                     </div>
                     <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Employee fulfillment</p>
@@ -418,7 +405,6 @@ export default function EmployeeDashboard() {
                 </div>
             </div>
         </div>
-        <InstallPrompt context="employee" />
       </>
     )
 }

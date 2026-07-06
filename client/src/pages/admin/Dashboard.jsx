@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { API_URL } from '../../lib/api'
 import { createAuthFetch } from '../../lib/authFetch'
-import InstallPrompt, { InstallButton } from '../../components/InstallPrompt'
-import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BRANCHES } from '../../context/BranchContext'
 
 const adminFetch = createAuthFetch('joesbrew_admin_token')
@@ -23,8 +21,6 @@ export default function Dashboard() {
   const [togglingShop, setTogglingShop] = useState(false)
   const [deletingAll, setDeletingAll] = useState(false)
   const [selectedBranch, setSelectedBranch] = useState('cogtong')
-  const { status: pushStatus, subscribe: subscribePush } = usePushNotifications('admin')
-
   const todayStr = new Date().toDateString()
 
   const todaysOrders = orders.filter(o => {
@@ -305,15 +301,6 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              {pushStatus === 'idle' && (
-                <button onClick={subscribePush} className="font-heading text-xs tracking-wider px-4 py-1 rounded-full border border-brew-brown/30 text-brew-brown hover:border-brew-brown transition-colors">
-                  🔔 ENABLE ALERTS
-                </button>
-              )}
-              {pushStatus === 'subscribed' && (
-                <span className="font-heading text-xs text-green-700 px-3 py-1 rounded-full bg-green-100">🔔 ALERTS ON</span>
-              )}
-              <InstallButton context="admin" />
             </div>
           </div>
           <p className="font-body text-brew-brown/60 mt-1">Joe's Brew · Payment verification</p>
@@ -567,7 +554,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
-    <InstallPrompt context="admin" />
     </>
   )
 }
