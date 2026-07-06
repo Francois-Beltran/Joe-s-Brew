@@ -65,4 +65,9 @@ app.get('/health', (_, res) => {
  */
 app.listen(PORT, () => {
   console.log(`Joe's Brew server running on port ${PORT}`)
+  console.log('[SMS] Gateway URL set:', !!process.env.SMS_GATEWAY_URL)
+  console.log('[SMS] API Key set:    ', !!process.env.SMS_API_KEY)
+  console.log('[SMS] Admin phones:  ', process.env.ADMIN_PHONE_NUMBERS   || '⚠ MISSING — set ADMIN_PHONE_NUMBERS')
+  console.log('[SMS] Cogtong phone: ', process.env.BRANCH_PHONE_COGTONG  || '⚠ MISSING — set BRANCH_PHONE_COGTONG')
+  console.log('[SMS] Candijay phone:', process.env.BRANCH_PHONE_CANDIJAY || '⚠ MISSING — set BRANCH_PHONE_CANDIJAY')
 })

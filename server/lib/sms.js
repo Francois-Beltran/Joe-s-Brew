@@ -1,25 +1,31 @@
 // SMS Gateway: sms-gate.app (Android app running on the shop's Android device)
-// SMS_GATEWAY_URL and SMS_API_KEY must be set in server/.env (and Render env vars).
+// Required env vars: SMS_GATEWAY_URL, SMS_API_KEY, ADMIN_PHONE_NUMBERS,
+//                    BRANCH_PHONE_COGTONG, BRANCH_PHONE_CANDIJAY
 // SMS_API_KEY format: "username:password"
-//
-// IMPORTANT: sms-gate.app only reliably delivers to ONE phoneNumber per request.
-// sendSMSToNotifyList sends one sequential request per recipient to guarantee delivery.
 
-const CO_ADMIN_PHONES = ['09653280300', '09275165980', '09173011678']
-
-const BRANCH_PHONES = {
-  cogtong:  '09936040934',
-  candijay: '09928125498',
+function getAdminPhones() {
+  return (process.env.ADMIN_PHONE_NUMBERS || '')
+    .split(',').map(p => p.trim()).filter(Boolean)
 }
 
+function getBranchPhone(branchId) {
+  const map = {
+    cogtong:  process.env.BRANCH_PHONE_COGTONG,
+    candijay: process.env.BRANCH_PHONE_CANDIJAY,
+  }
+  return map[branchId] || null
+}
+
+// Returns: [branchPhone (if mapped), ...adminPhones]
+// Branch phone is ONLY added when branchId matches — never cross-branch.
 export function buildNotifyList(branchId) {
-  const phones = [...CO_ADMIN_PHONES]
-  const branchPhone = BRANCH_PHONES[branchId]
+  const phones = getAdminPhones()
+  const branchPhone = getBranchPhone(branchId)
   if (branchPhone && !phones.includes(branchPhone)) phones.unshift(branchPhone)
   return phones
 }
 
-// Send SMS to a single phone number.
+// Send SMS to a single phone number via sms-gate.app.
 export async function sendSMS(phoneNumber, message) {
   const url = process.env.SMS_GATEWAY_URL
   const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
@@ -39,19 +45,17 @@ export async function sendSMS(phoneNumber, message) {
 }
 
 // Send the same message to every recipient on the notify list.
-// Fires one sequential request per number — sms-gate.app only processes
-// one phoneNumber reliably per API call.
+// Fires one sequential request per number — ensures each delivery is confirmed
+// before the next begins, and logs every success/failure to the server console.
 export async function sendSMSToNotifyList(branchId, message) {
   const phones = buildNotifyList(branchId)
-  const results = []
+  console.log(`[SMS] Dispatching to ${phones.length} recipient(s) (branch: ${branchId}):`, phones)
   for (const phone of phones) {
     try {
-      const result = await sendSMS(phone, message)
-      results.push({ phone, ok: true, result })
+      await sendSMS(phone, message)
+      console.log(`[SMS] ✓ Delivered to ${phone}`)
     } catch (err) {
-      console.error(`SMS failed for ${phone}:`, err.message)
-      results.push({ phone, ok: false, error: err.message })
+      console.error(`[SMS] ✗ Failed for ${phone}:`, err.message)
     }
   }
-  return results
 }
