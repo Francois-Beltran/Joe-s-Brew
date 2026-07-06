@@ -244,9 +244,9 @@ export default function MenuSection() {
                 const other = categoryItems.filter(i => !i.subcategory)
                 return (
                   <div key={category}>
-                    {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} />}
-                    {creamBase.length > 0 && <SwipeRow categoryName="Frappe — Cream Base" items={creamBase} />}
-                    {other.length > 0 && <SwipeRow categoryName="Frappe" items={other} />}
+                    {coffeeBase.length > 0 && <SwipeRow categoryName="Frappe — Coffee Base" items={coffeeBase} branchAvail={branchAvail} />}
+                    {creamBase.length > 0 && <SwipeRow categoryName="Frappe — Cream Base" items={creamBase} branchAvail={branchAvail} />}
+                    {other.length > 0 && <SwipeRow categoryName="Frappe" items={other} branchAvail={branchAvail} />}
                   </div>
                 )
               }
@@ -254,7 +254,7 @@ export default function MenuSection() {
               if (category === 'Milk Tea') {
                 return (
                   <div key={category}>
-                    <SwipeRow categoryName={category} items={categoryItems} />
+                    <SwipeRow categoryName={category} items={categoryItems} branchAvail={branchAvail} />
                   </div>
                 )
               }
