@@ -141,7 +141,11 @@ export default function GCashModal({ onClose, onSuccess }) {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Something went wrong.')
+        if (data.items?.length > 0) {
+          setError(`These items are currently unavailable: ${data.items.join(', ')}. Please remove them from your cart before checking out.`)
+        } else {
+          setError(data.error || 'Something went wrong.')
+        }
         return
       }
 
