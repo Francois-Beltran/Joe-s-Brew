@@ -100,7 +100,7 @@ export default function MenuCard({ item, branchAvail = {} }) {
         .from('menu_items')
         .select('*')
         .eq('category', 'Add-ons')
-        .eq('addon_for', item.category)
+        .ilike('addon_for', `%${item.category}%`)
         .eq('is_available', true)
       // Also filter by branch-specific availability (COALESCE: absent row = available)
       const available = (data ?? []).filter(

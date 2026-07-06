@@ -395,6 +395,9 @@ export default function EmployeeDashboard() {
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 {item.best_seller && <span className="text-amber-400 text-xs shrink-0">⭐</span>}
                                                 <p className="font-body font-medium text-brew-brown text-sm truncate">{item.name}</p>
+                                                {item.category === 'Add-ons' && item.addon_for && (
+                                                    <span className="font-body text-[10px] text-brew-brown/40 shrink-0 whitespace-nowrap">for {item.addon_for}</span>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => toggleAvailability(item)}

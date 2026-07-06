@@ -30,7 +30,7 @@ export default function FruitBlendCard({ item, branchAvail = {} }) {
         .from('menu_items')
         .select('*')
         .eq('category', 'Add-ons')
-        .eq('addon_for', 'Fruit Blend')
+        .ilike('addon_for', '%Fruit Blend%')
         .eq('is_available', true)
       // Also filter by branch-specific availability (COALESCE: absent row = available)
       const available = (data ?? []).filter(
