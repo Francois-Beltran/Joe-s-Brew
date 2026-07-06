@@ -54,18 +54,18 @@ export async function sendSMS(phoneNumber, message) {
   return rawText ? JSON.parse(rawText) : { status: res.status }
 }
 
-// Send the same message to every recipient on the notify list.
-// Fires one sequential request per number — ensures each delivery is confirmed
-// before the next begins, and logs every success/failure to the server console.
+// Send the same message to every recipient on the notify list in parallel.
+// Each number gets its own request — sms-gate.app handles them concurrently,
+// so total time ≈ one request (~850ms) instead of N × 850ms sequentially.
 export async function sendSMSToNotifyList(branchId, message) {
   const phones = buildNotifyList(branchId)
   console.log(`[SMS] Dispatching to ${phones.length} recipient(s) (branch: ${branchId}):`, phones)
-  for (const phone of phones) {
+  await Promise.allSettled(phones.map(async phone => {
     try {
       await sendSMS(phone, message)
-      console.log(`[SMS] ✓ Delivered to ${phone}`)
+      console.log(`[SMS] ✓ Delivered to ${toE164(phone)}`)
     } catch (err) {
-      console.error(`[SMS] ✗ Failed for ${phone}:`, err.message)
+      console.error(`[SMS] ✗ Failed for ${toE164(phone)}:`, err.message)
     }
-  }
+  }))
 }
