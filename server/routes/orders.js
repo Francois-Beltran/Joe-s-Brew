@@ -7,14 +7,27 @@ const router = express.Router()
 router.use(express.json())
 
 // ============================================================
-// Co-Admin notification registry — receives SMS on every order event
-// (verify / reject / fulfill). Outbound sender is the Android device
-// running sms-gate.app with SIM number 09241913950.
+// Co-Admin notification registry — receives SMS on every order event.
+// Outbound sender is the Android device running sms-gate.app (09241913950).
 // ============================================================
 const CO_ADMIN_PHONES = ['09653280300', '09275165980', '09173011678']
 
-async function sendSMSToCoAdmins(message) {
-  return Promise.allSettled(CO_ADMIN_PHONES.map(phone => sendSMS(phone, message)))
+// Branch-specific phones — prepended to the notify list per order's branch
+const BRANCH_PHONES = {
+  cogtong:  '09936040934',
+  candijay: '09928125498',
+}
+
+// Builds full notify list: branch phone (if mapped) + all co-admin phones
+function buildNotifyList(branchId) {
+  const phones = [...CO_ADMIN_PHONES]
+  const branchPhone = BRANCH_PHONES[branchId]
+  if (branchPhone && !phones.includes(branchPhone)) phones.unshift(branchPhone)
+  return phones
+}
+
+async function sendSMSToNotifyList(branchId, message) {
+  return Promise.allSettled(buildNotifyList(branchId).map(phone => sendSMS(phone, message)))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,9 +151,11 @@ router.post('/verify', validateAdmin, async (req, res) => {
     }
 
     try {
-      await sendSMSToCoAdmins(
+      await sendSMSToNotifyList(
+        order.branch_id,
         toPlainText(
           `✅ Payment Verified\n\n` +
+          `Branch: ${(order.branch_id || 'cogtong').toUpperCase()}\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
           `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
           `GCash Ref: ${order.gcash_ref}\n` +
@@ -153,6 +168,7 @@ router.post('/verify', validateAdmin, async (req, res) => {
 
     // Notify customer that payment was received and order is being prepared
     if (order.customer_phone) {
+      const isDelivery = order.order_type === 'delivery'
       try {
         await sendSMS(
           order.customer_phone,
@@ -161,11 +177,10 @@ router.post('/verify', validateAdmin, async (req, res) => {
             `Hi ${order.customer_name || 'there'}! Your Joe's Brew payment has been verified.\n\n` +
             `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
             `Amount: PHP ${Number(order.total_amount).toFixed(2)}\n\n` +
-            `We're now preparing your order. We'll text you again when it's ready for pickup!`
+            `We're now preparing your order. We'll text you again when ${isDelivery ? 'your order is out for delivery' : "it's ready for pick-up"}!`
           )
         )
       } catch (smsErr) {
-        // Non-critical: order is still verified even if customer SMS fails
         console.error('Customer SMS notify error (verify):', smsErr.message)
       }
     }
@@ -228,9 +243,11 @@ router.post('/reject', validateAdmin, async (req, res) => {
     }
 
     try {
-      await sendSMSToCoAdmins(
+      await sendSMSToNotifyList(
+        order.branch_id,
         toPlainText(
           `❌ Order Rejected\n\n` +
+          `Branch: ${(order.branch_id || 'cogtong').toUpperCase()}\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
           `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
           `Reason: ${finalReason}`
@@ -294,12 +311,17 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Failed to update order status' })
     }
 
+    const isDelivery = order.order_type === 'delivery'
+
     try {
-      await sendSMSToCoAdmins(
+      await sendSMSToNotifyList(
+        order.branch_id,
         toPlainText(
-          `☕ Order Marked Ready\n\n` +
+          `${isDelivery ? '🛵' : '☕'} Order ${isDelivery ? 'Out for Delivery' : 'Marked Ready'}\n\n` +
+          `Branch: ${(order.branch_id || 'cogtong').toUpperCase()}\n` +
           `Order: #${orderId.slice(0, 8).toUpperCase()}\n` +
           `Customer: ${order.customer_name || order.customer_phone || 'N/A'}\n` +
+          `Type: ${isDelivery ? 'Delivery' : 'Pickup'}\n` +
           `Amount: PHP ${Number(order.total_amount).toFixed(2)}`
         )
       )
@@ -307,19 +329,22 @@ router.post('/fulfill', validateAdmin, async (req, res) => {
       console.error('Co-admin SMS notify error (fulfill):', smsErr.message)
     }
 
-    // Notify customer via SMS if phone number is available
+    // Notify customer — message differs by order type
     if (order.customer_phone) {
       try {
         await sendSMS(
           order.customer_phone,
           toPlainText(
-            `☕ Your Joe's Brew order is ready!\n\n` +
-            `Order #${orderId.slice(0, 8).toUpperCase()} is ready for pickup.\n` +
-            `Please proceed to the counter. Thank you!`
+            isDelivery
+              ? `🛵 Your Joe's Brew order is out for delivery!\n\n` +
+                `Order #${orderId.slice(0, 8).toUpperCase()} is on its way to you.\n` +
+                `Please prepare the exact amount. Thank you!`
+              : `☕ Your Joe's Brew order is ready for pick-up!\n\n` +
+                `Order #${orderId.slice(0, 8).toUpperCase()} is ready at the counter.\n` +
+                `Please proceed to claim your order. Thank you!`
           )
         )
       } catch (smsErr) {
-        // Non-critical — order still fulfills even if customer SMS fails
         console.error('Customer SMS notify error (fulfill):', smsErr.message)
       }
     }

@@ -3,6 +3,7 @@ import { useCart } from '../hooks/useCart'
 import { API_URL } from '../lib/api'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { toPng } from 'html-to-image'
 import { useBranch } from '../context/BranchContext'
 
 export default function GCashModal({ onClose, onSuccess }) {
@@ -28,6 +29,7 @@ export default function GCashModal({ onClose, onSuccess }) {
   const [locationError, setLocationError] = useState('')
 
   const fileInputRef = useRef(null)
+  const receiptRef = useRef(null)
 
   // 🔧 TO CHANGE GCASH NUMBER/NAME: update VITE_GCASH_NUMBER and VITE_GCASH_NAME in client/.env
   const GCASH_NUMBER = import.meta.env.VITE_GCASH_NUMBER || '09173011678'
@@ -147,6 +149,7 @@ export default function GCashModal({ onClose, onSuccess }) {
       setResult(data)
       setStage('done')
       clearCart()
+      sessionStorage.setItem('joesbrew_last_order_id', data.orderId)
 
     } catch {
       setError('Network error. Please try again.')
@@ -184,45 +187,23 @@ export default function GCashModal({ onClose, onSuccess }) {
     }
   }, [sitio, deliveryZones, displayTotal])
 
-  const downloadReceipt = () => {
-    const itemLines = cartSnapshot.map(item => {
-      const sizeDisplay = item.sizeLabel && item.sizeLabel !== 'One Size' && item.sizeLabel !== 'Add-on'
-        ? ` (${item.sizeLabel})` : ''
-      const prefix = item.sizeLabel === 'Add-on' ? '  + ' : ''
-      return `${prefix}${item.quantity}x ${item.name}${sizeDisplay} — ₱${(item.displayPrice * item.quantity).toFixed(2)}`
-    }).join('\n')
-
-    const receiptText = `
-JOE'S BREW — ORDER RECEIPT
-============================
-Order ID: #${result.orderId?.slice(0, 8).toUpperCase()}
-Customer: ${customerName}
-Phone: ${customerPhone}
-Order Type: ${orderType === 'delivery' ? 'Delivery' : 'Pickup'}
-${orderType === 'delivery' ? `Sitio: ${sitio}\nLandmark: ${landmark || 'N/A'}` : ''}
-
-ITEMS ORDERED:
-${itemLines}
-
-GCash Reference: ${result.gcashRef}
-Total Amount: ₱${Number(result.totalAmount).toFixed(2)}
-
-Status: Payment submitted — pending verification
-Date: ${new Date().toLocaleString('en-PH')}
-============================
-Please present this receipt when claiming your order.
-Thank you for choosing Joe's Brew!
-`.trim()
-
-    const blob = new Blob([receiptText], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `JoesBrew_Receipt_${result.orderId?.slice(0, 8).toUpperCase()}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  const downloadReceipt = async () => {
+    if (!receiptRef.current) return
+    try {
+      const dataUrl = await toPng(receiptRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+      })
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `JoesBrew_Receipt_${result.orderId?.slice(0, 8).toUpperCase()}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Receipt image capture failed:', err)
+    }
   }
 
   return (
@@ -558,7 +539,7 @@ Thank you for choosing Joe's Brew!
               <div className="text-6xl">✅</div>
               <h3 className="font-heading text-2xl text-brew-brown">ORDER RECEIVED!</h3>
 
-              <div className="bg-white rounded-2xl p-5 w-full border border-brew-brown/20 space-y-3 text-left">
+              <div ref={receiptRef} className="bg-white rounded-2xl p-5 w-full border border-brew-brown/20 space-y-3 text-left">
                 <div className="text-center">
                   <p className="font-body text-xs text-brew-brown/50 mb-1">Order ID</p>
                   <p className="font-heading text-lg text-brew-brown tracking-widest">
@@ -610,7 +591,7 @@ Thank you for choosing Joe's Brew!
               </div>
 
               <p className="font-body text-brew-brown/60 text-sm">
-                Our staff will verify your payment shortly. You'll receive an SMS on <strong>{customerPhone}</strong> when your order is ready for pickup.
+                Our staff will verify your payment shortly. You'll receive an SMS on <strong>{customerPhone}</strong> when your order is verified and ready.
               </p>
 
               <button

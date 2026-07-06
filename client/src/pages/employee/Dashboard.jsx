@@ -320,10 +320,24 @@ export default function EmployeeDashboard() {
                                             </span>
                                         </div>
 
-                                        {order.order_type === 'delivery' && order.delivery_address && (
-                                            <p className="font-body text-xs text-brew-brown/70 bg-brew-beige/50 rounded-lg px-3 py-2 mb-2">
-                                                📍 {order.delivery_address}
-                                            </p>
+                                        {order.order_type === 'delivery' && (
+                                            <div className="bg-brew-beige/50 rounded-lg px-3 py-2 mb-2 space-y-1">
+                                                {order.delivery_address && (
+                                                    <p className="font-body text-xs text-brew-brown/70">
+                                                        📍 {order.delivery_address}
+                                                    </p>
+                                                )}
+                                                {order.delivery_lat && order.delivery_lng && (
+                                                    <a
+                                                        href={`https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 font-heading text-xs text-blue-600 hover:text-blue-800 underline"
+                                                    >
+                                                        🗺️ View Pinpoint on Map
+                                                    </a>
+                                                )}
+                                            </div>
                                         )}
 
                                         <ul className="mb-3 space-y-1">
