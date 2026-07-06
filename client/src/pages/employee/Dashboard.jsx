@@ -174,6 +174,8 @@ export default function EmployeeDashboard() {
     ]
 
     const grouped = menuItems.reduce((acc, item) => {
+        // Hide disabled add-ons — they are dead duplicates that can't be deleted due to order history
+        if (item.category === 'Add-ons' && !item.is_available) return acc
         const cat = item.category || 'Other'
         if (!acc[cat]) acc[cat] = []
         acc[cat].push(item)
