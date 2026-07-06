@@ -25,10 +25,20 @@ export function buildNotifyList(branchId) {
   return phones
 }
 
+// sms-gate.app requires E.164 international format (+639XXXXXXXXX).
+// Convert Philippine local format (09XXXXXXXXX) automatically.
+function toE164(phone) {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('09') && digits.length === 11) return '+63' + digits.slice(1)
+  if (digits.startsWith('639') && digits.length === 12) return '+' + digits
+  return phone // already +63... or unknown — pass through as-is
+}
+
 // Send SMS to a single phone number via sms-gate.app.
 export async function sendSMS(phoneNumber, message) {
   const url = process.env.SMS_GATEWAY_URL
   const basicAuth = Buffer.from(process.env.SMS_API_KEY).toString('base64')
+  const e164 = toE164(phoneNumber)
 
   const res = await fetch(url, {
     method: 'POST',
@@ -36,11 +46,11 @@ export async function sendSMS(phoneNumber, message) {
       'Authorization': `Basic ${basicAuth}`,
       'Content-Type':  'application/json',
     },
-    body: JSON.stringify({ phoneNumbers: [phoneNumber], message }),
+    body: JSON.stringify({ phoneNumbers: [e164], message }),
   })
 
   const rawText = await res.text()
-  if (!res.ok) throw new Error(`SMS Gateway error (${phoneNumber}): ${rawText}`)
+  if (!res.ok) throw new Error(`SMS Gateway error (${e164}): ${rawText}`)
   return rawText ? JSON.parse(rawText) : { status: res.status }
 }
 
