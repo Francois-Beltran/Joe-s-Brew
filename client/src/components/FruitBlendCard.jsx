@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../hooks/useCart'
 import MagneticButton from './MagneticButton'
 
-export default function FruitBlendCard({ item }) {
+export default function FruitBlendCard({ item, branchAvail = {} }) {
   const { addItem, cart } = useCart()
   const [variants, setVariants] = useState([])
   const [selectedBase, setSelectedBase] = useState('')
@@ -32,10 +32,14 @@ export default function FruitBlendCard({ item }) {
         .eq('category', 'Add-ons')
         .eq('addon_for', 'Fruit Blend')
         .eq('is_available', true)
-      setAddons(data ?? [])
+      // Also filter by branch-specific availability (COALESCE: absent row = available)
+      const available = (data ?? []).filter(
+        addon => addon.id in branchAvail ? branchAvail[addon.id] : true
+      )
+      setAddons(available)
     }
     fetchAddons()
-  }, [])
+  }, [branchAvail])
 
   const currentVariant = variants.find(v => v.base_type === selectedBase)
   const displayPrice = currentVariant

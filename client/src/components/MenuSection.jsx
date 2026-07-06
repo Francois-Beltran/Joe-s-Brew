@@ -31,7 +31,7 @@ function getFruitBlendImage(name) {
   return null
 }
 
-function SwipeRow({ items, categoryName }) {
+function SwipeRow({ items, categoryName, branchAvail }) {
   const scrollRef = useRef(null)
 
   return (
@@ -48,7 +48,7 @@ function SwipeRow({ items, categoryName }) {
       >
         {items.map(item => (
           <div key={item.id} className="menu-card shrink-0 w-64 snap-start">
-            <MenuCard item={item} />
+            <MenuCard item={item} branchAvail={branchAvail} />
           </div>
         ))}
       </div>
@@ -57,7 +57,7 @@ function SwipeRow({ items, categoryName }) {
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {items.map(item => (
           <div key={item.id} className="menu-card">
-            <MenuCard item={item} />
+            <MenuCard item={item} branchAvail={branchAvail} />
           </div>
         ))}
       </div>
@@ -65,7 +65,7 @@ function SwipeRow({ items, categoryName }) {
   )
 }
 
-function GridSection({ items, categoryName }) {
+function GridSection({ items, categoryName, branchAvail }) {
   return (
     <div className="mb-10">
       <h3 className="font-heading text-2xl text-brew-brown mb-4 tracking-wide">
@@ -74,7 +74,7 @@ function GridSection({ items, categoryName }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {items.map(item => (
           <div key={item.id} className="menu-card">
-            <MenuCard item={item} />
+            <MenuCard item={item} branchAvail={branchAvail} />
           </div>
         ))}
       </div>
@@ -270,7 +270,7 @@ export default function MenuSection() {
                     >
                       {fruitBlendItems.map(item => (
                         <div key={item.id} className="menu-card shrink-0 w-64 snap-start">
-                          <FruitBlendCard item={item} />
+                          <FruitBlendCard item={item} branchAvail={branchAvail} />
                         </div>
                       ))}
                     </div>
@@ -278,7 +278,7 @@ export default function MenuSection() {
                     <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {fruitBlendItems.map(item => (
                         <div key={item.id} className="menu-card">
-                          <FruitBlendCard item={item} />
+                          <FruitBlendCard item={item} branchAvail={branchAvail} />
                         </div>
                       ))}
                     </div>
@@ -287,9 +287,9 @@ export default function MenuSection() {
               }
 
               return SWIPE_CATEGORIES.includes(category) ? (
-                <SwipeRow key={category} categoryName={category} items={categoryItems} />
+                <SwipeRow key={category} categoryName={category} items={categoryItems} branchAvail={branchAvail} />
               ) : (
-                <GridSection key={category} categoryName={category} items={categoryItems} />
+                <GridSection key={category} categoryName={category} items={categoryItems} branchAvail={branchAvail} />
               )
             })}
           </div>

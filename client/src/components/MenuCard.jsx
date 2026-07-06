@@ -70,7 +70,7 @@ function getImageStyle(imageUrl) {
   }
 }
 
-export default function MenuCard({ item }) {
+export default function MenuCard({ item, branchAvail = {} }) {
 
   const { addItem, cart } = useCart()
   const [addons, setAddons] = useState([])
@@ -100,12 +100,16 @@ export default function MenuCard({ item }) {
         .from('menu_items')
         .select('*')
         .eq('category', 'Add-ons')
-        .eq('addon_for', item.category) 
+        .eq('addon_for', item.category)
         .eq('is_available', true)
-      setAddons(data ?? [])
+      // Also filter by branch-specific availability (COALESCE: absent row = available)
+      const available = (data ?? []).filter(
+        addon => addon.id in branchAvail ? branchAvail[addon.id] : true
+      )
+      setAddons(available)
     }
     if (item.category) fetchAddons()
-  }, [item.category])
+  }, [item.category, branchAvail])
 
   const handleAdd = () => {
     // Add the main item
