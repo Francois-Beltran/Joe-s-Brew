@@ -103,7 +103,7 @@ export default function MenuSection() {
     fetchMenu()
   }, [])
 
-  // Fetch branch-scoped availability overrides whenever the branch changes
+  // Fetch branch-scoped availability overrides and subscribe to live changes
   useEffect(() => {
     if (branch.comingSoon) {
       setBranchAvail({})
@@ -119,6 +119,18 @@ export default function MenuSection() {
       )
     }
     fetchBranchAvail()
+
+    // Realtime: re-fetch whenever an employee toggles availability for this branch
+    const channel = supabase
+      .channel(`branch-avail-${branch.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'branch_menu_availability', filter: `branch_id=eq.${branch.id}` },
+        () => fetchBranchAvail()
+      )
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
   }, [branch.id, branch.comingSoon])
 
   // Merge branch overrides: branch row wins; absent = available by default (COALESCE true)
