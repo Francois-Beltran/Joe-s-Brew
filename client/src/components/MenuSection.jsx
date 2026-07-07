@@ -163,8 +163,8 @@ export default function MenuSection() {
   }, [loading])
 
   const CATEGORY_ORDER = [
-    'Hot Brew', 'Cold Brew', 'Barista Signature', 'Frappe',
-    'Milk Tea', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
+    'Hot Brew', 'Cold Brew', 'Frappe', 'Milk Tea',
+    'Barista Signature', 'Fruit Blend', 'Coffee', 'Non-Coffee', 'Takoyaki', 'Waffles', 'Nachos', 'Fries', 'Food'
   ]
 
   const grouped = effectiveItems.reduce((acc, item) => {
