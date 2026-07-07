@@ -82,6 +82,22 @@ function GridSection({ items, categoryName, branchAvail }) {
   )
 }
 
+function ComingSoonSection({ categoryName }) {
+  return (
+    <div className="mb-10">
+      <h3 className="font-heading text-2xl text-brew-brown mb-4 px-4 md:px-0 tracking-wide">
+        {categoryName.toUpperCase()}
+      </h3>
+      <div className="rounded-2xl bg-brew-brown/5 border border-brew-brown/10 py-10 flex flex-col items-center justify-center gap-2">
+        <p className="font-heading text-brew-brown/40 text-xl tracking-widest">COMING SOON...</p>
+        <p className="font-body text-brew-brown/30 text-sm">This category is temporarily out of stock.</p>
+      </div>
+    </div>
+  )
+}
+
+const allUnavailable = items => items.length > 0 && items.every(i => !i.is_available)
+
 export default function MenuSection() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -239,6 +255,7 @@ export default function MenuSection() {
               const categoryItems = grouped[category]
 
               if (category === 'Frappe') {
+                if (allUnavailable(categoryItems)) return <ComingSoonSection key={category} categoryName="Frappe" />
                 const coffeeBase = categoryItems.filter(i => i.subcategory === 'Coffee Base')
                 const creamBase = categoryItems.filter(i => i.subcategory === 'Cream Base')
                 const other = categoryItems.filter(i => !i.subcategory)
@@ -252,6 +269,7 @@ export default function MenuSection() {
               }
 
               if (category === 'Milk Tea') {
+                if (allUnavailable(categoryItems)) return <ComingSoonSection key={category} categoryName="Milk Tea" />
                 return (
                   <div key={category}>
                     <SwipeRow categoryName={category} items={categoryItems} branchAvail={branchAvail} />
@@ -260,7 +278,6 @@ export default function MenuSection() {
               }
 
               if (category === 'Fruit Blend') {
-                // Filter out Peach and apply local image overrides
                 const fruitBlendItems = categoryItems
                   .filter(item => !item.name.toLowerCase().includes('peach'))
                   .map(item => {
@@ -269,6 +286,7 @@ export default function MenuSection() {
                   })
 
                 if (fruitBlendItems.length === 0) return null
+                if (allUnavailable(fruitBlendItems)) return <ComingSoonSection key={category} categoryName="Fruit Blend" />
 
                 return (
                   <div key={category} className="mb-10">
@@ -297,6 +315,8 @@ export default function MenuSection() {
                   </div>
                 )
               }
+
+              if (allUnavailable(categoryItems)) return <ComingSoonSection key={category} categoryName={category} />
 
               return SWIPE_CATEGORIES.includes(category) ? (
                 <SwipeRow key={category} categoryName={category} items={categoryItems} branchAvail={branchAvail} />
