@@ -32,6 +32,8 @@ const IMAGE_STYLE = {
   'caramel_macchiato.jpg':           { position: 'center 40%' },
   'joes_iced_spanish_latte.jpg':     { position: 'center 40%' },
   'joe_s_iced_americano.jpg':        { position: 'center 40%' },
+  'joes_salted_caramel.jpg':         { position: 'center 40%' },
+  
   // Frappe
   'matcha_cream.jpg':                { position: 'center 30%' },
   'matcha_frappe.jpg':               { fit: 'contain', position: 'center center' },

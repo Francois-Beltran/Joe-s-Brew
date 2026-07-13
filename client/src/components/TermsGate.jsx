@@ -3,23 +3,69 @@ import { useState, useEffect } from 'react'
 // 📝 TO EDIT TERMS: paste your full terms & agreement text inside the <div> below
 const TERMS_CONTENT = `
 Terms and Conditions of Service
-1. Acceptance of Terms By accessing the Joe’s Brew ordering platform and placing an order, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use our platform.
-2. Order Placement and Verification
-•	Order Accuracy: Customers are responsible for ensuring that order details, including product selection, quantity, and delivery address, are accurate before submission. Joe’s Brew is not liable for orders placed in error.
-•	Payment via GCash: Since we utilize a manual payment verification system, your order is considered pending until payment is confirmed by our team.
-•	Proof of Payment: You must upload a clear, unaltered screenshot of the successful GCash transaction containing the Transaction Reference Number. Joe’s Brew reserves the right to reject any order if the reference number is illegible, missing, or cannot be verified against our records.
-3. Cancellation and Refunds
-•	Right to Refuse: Joe’s Brew reserves the right to cancel any order at any time, including orders that cannot be fulfilled due to stock shortages or inability to verify payment.
-•	Modification: Once an order status is marked as "Preparing," no changes can be made.
-•	Refund Policy: Refunds are only provided for verified payment errors or orders cancelled by Joe’s Brew. Due to the perishable nature of our products, refunds for "change of mind" or customer errors are not permitted.
-4. Delivery Policy
-•	Delivery Estimates: Stated delivery times are estimates. Joe’s Brew is not liable for delays caused by external factors such as traffic, weather conditions, or local road events.
-•	Customer Accessibility: It is the customer's responsibility to be available at the provided delivery address. If the delivery rider is unable to contact the customer or locate the address after reasonable effort, the order may be marked as "undelivered" and no refund will be issued.
-5. Limitation of Liability Joe’s Brew shall not be held liable for any indirect, incidental, or consequential damages resulting from the use of our platform or the consumption of our products. Our total liability for any claim related to an order shall not exceed the total price of the items purchased.
-6. Data Privacy In accordance with the Data Privacy Act of 2012, personal information (name, address, phone number) provided through this platform is collected solely for order fulfillment and delivery. Your data will not be shared, sold, or used for purposes unrelated to your order.
-7. Amendments Joe’s Brew reserves the right to update these Terms and Conditions at any time. Continued use of our platform constitutes acceptance of any updated terms.
-
-
+1. Acceptance of Terms
+By accessing the Joe's Brew online ordering platform and placing an order, you acknowledge that you have read, understood, and agreed to these Terms and Conditions. If you do not agree with any part of these Terms, please refrain from using the platform.
+2. Order Placement and Payment Verification
+Order Accuracy
+Customers are responsible for reviewing all order details before submitting an order, including selected items, quantities, branch, delivery address, and contact information. Joe's Brew shall not be responsible for delays, failed deliveries, or incorrect orders resulting from inaccurate information provided by the customer.
+Branch Selection
+Joe's Brew operates multiple branches. Customers are solely responsible for selecting the correct branch before placing an order. Please ensure that the selected branch is correct, as it determines where your order will be prepared and fulfilled. Joe's Brew shall not be held responsible for orders placed under the wrong branch due to customer error. Once an order has been confirmed or has entered the Preparing status, it cannot be transferred, modified, or refunded.
+Payment Verification
+Orders paid via GCash are subject to manual verification. An order will remain Pending Payment Verification until payment has been successfully verified by our staff.
+Proof of Payment
+Customers must upload a clear and unedited screenshot of their successful GCash transaction, including the Transaction Reference Number. Joe's Brew reserves the right to reject or cancel any order if the submitted proof of payment is incomplete, altered, illegible, or cannot be verified.
+3. Order Cancellation, Modification, and Refunds
+Right to Cancel
+Joe's Brew reserves the right to refuse or cancel any order for reasons including, but not limited to:
+Failure to verify payment
+Product unavailability
+Suspected fraudulent transactions
+Incorrect or incomplete customer information
+Operational limitations beyond our control
+Order Modifications
+Orders may only be modified or cancelled before they enter the Preparing status. Once preparation has begun, no changes or cancellations can be accommodated.
+Refund Policy
+Refunds will only be issued for verified payment errors or orders cancelled by Joe's Brew. Due to the perishable nature of our products, refunds or exchanges will not be granted for:
+Change of mind
+Incorrect orders placed by the customer
+Wrong branch selection
+Incorrect delivery information
+Failure to receive the order due to customer unavailability
+4. Delivery and Pickup Policy
+Delivery Time
+Estimated delivery times are provided for reference only and may vary depending on traffic conditions, weather, rider availability, or other unforeseen circumstances.
+Customer Availability
+Customers are responsible for ensuring that someone is available to receive the order at the specified delivery address. If the delivery rider is unable to contact the customer or complete the delivery after reasonable attempts, the order may be considered undeliverable and no refund shall be issued.
+Pickup Orders
+Customers are encouraged to claim their orders within their selected pickup time. Joe's Brew shall not be responsible for any decline in product quality resulting from delayed pickup.
+5. Product Availability and Pricing
+All prices are displayed in Philippine Pesos (PHP) and are subject to change without prior notice.
+All menu items are subject to availability. If a product becomes unavailable after an order has been placed, Joe's Brew reserves the right to substitute, modify, or cancel the affected item after notifying the customer whenever possible.
+6. Food Allergy Notice
+Our products may contain or come into contact with common allergens, including but not limited to milk, eggs, soy, wheat, peanuts, tree nuts, and gluten. Customers with food allergies or dietary restrictions are encouraged to contact Joe's Brew before placing an order.
+7. Customer Conduct
+Joe's Brew reserves the right to refuse service or cancel orders from customers who engage in abusive, threatening, fraudulent, or inappropriate behavior toward our staff, delivery personnel, or representatives.
+8. Promotions and Discounts
+Promotional offers, discounts, vouchers, and coupon codes are subject to their respective terms and conditions and may not be combined unless otherwise stated. Joe's Brew reserves the right to modify or discontinue promotions at any time without prior notice.
+9. Limitation of Liability
+To the fullest extent permitted by applicable law, Joe's Brew shall not be liable for any indirect, incidental, consequential, or special damages arising from the use of this platform or the purchase or consumption of our products.
+Joe's Brew's total liability arising from any claim relating to an order shall not exceed the total amount paid by the customer for that specific order.
+10. Data Privacy
+In accordance with the Data Privacy Act of 2012 (Republic Act No. 10173), personal information collected through this platform—including names, addresses, contact numbers, and other information necessary for order fulfillment—shall be used solely for processing orders, verifying payments, arranging deliveries, providing customer support, and other legitimate business purposes related to your transaction.
+Joe's Brew will not sell, rent, or disclose your personal information to third parties except when required by law or when necessary to complete your order.
+11. Intellectual Property
+All website content, including but not limited to logos, branding, graphics, images, text, menus, and designs, are the exclusive property of Joe's Brew unless otherwise stated. Unauthorized reproduction, distribution, modification, or commercial use of any content is strictly prohibited.
+12. Force Majeure
+Joe's Brew shall not be held responsible for delays, interruptions, or failure to fulfill orders caused by events beyond its reasonable control, including but not limited to natural disasters, severe weather, power outages, internet disruptions, government restrictions, labor disputes, transportation issues, or other unforeseen circumstances.
+13. Amendments
+Joe's Brew reserves the right to modify or update these Terms and Conditions at any time without prior notice. Any revisions shall become effective immediately upon publication on the platform. Continued use of the platform after such changes constitutes acceptance of the updated Terms and Conditions.
+14. Governing Law
+These Terms and Conditions shall be governed by and construed in accordance with the laws of the Republic of the Philippines. Any disputes arising from the use of this platform shall be subject to the exclusive jurisdiction of the appropriate courts in the Philippines.
+15. Business Hours
+Joe's Brew accepts and processes orders during our official business hours, 8:30 AM to 6:30 PM, unless otherwise announced.
+Orders placed outside these business hours may still be received by the platform but will not be processed until the next business day.
+Joe's Brew reserves the right to suspend or delay the acceptance and processing of orders outside operating hours, even if the online ordering platform remains accessible due to administrative oversight or technical issues.
+Note: The online ordering platform may occasionally remain available outside business hours. This does not guarantee that orders placed during such times will be accepted or prepared immediately.
 `
 
 export default function TermsGate({ children }) {
