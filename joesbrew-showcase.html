@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Joe's Brew — Website Showcase</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --e:#1A0D05;--b:#4A2511;--bg:#D5BC9E;--c:#F5ECD7;
+  --g:#C8A26A;--g1:rgba(200,162,106,.14);--g2:rgba(200,162,106,.5);
+}
+body{background:#080503;padding:clamp(1.2rem,3vw,2.5rem);font-family:system-ui,-apple-system,sans-serif;}
+
+/* gallery */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2.8rem;max-width:1500px;margin:0 auto;}
+
+/* gallery item wrapper */
+.gi{display:flex;flex-direction:column;gap:.7rem;}
+.gi-ft{display:flex;justify-content:space-between;align-items:center;padding:.1rem 0 0;}
+.gi-lbl{font-size:.58rem;letter-spacing:.18em;color:rgba(200,162,106,.3);
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;}
+.dl{background:rgba(200,162,106,.08);border:1px solid rgba(200,162,106,.18);
+  color:var(--g);font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+  padding:.5rem 1.3rem;border-radius:30px;cursor:pointer;
+  transition:background .2s,border-color .2s,opacity .15s;}
+.dl:hover{background:rgba(200,162,106,.16);border-color:rgba(200,162,106,.35);}
+.dl:disabled{opacity:.45;cursor:default;}
+.dl-all{display:block;margin:0 auto 3rem;background:rgba(200,162,106,.1);
+  border:1px solid rgba(200,162,106,.25);color:var(--g);
+  font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  font-size:.75rem;letter-spacing:.28em;text-transform:uppercase;
+  padding:.8rem 2.4rem;border-radius:40px;cursor:pointer;
+  transition:background .2s;}
+.dl-all:hover{background:rgba(200,162,106,.2);}
+
+/* post wrapper — 1080:1350 */
+.pw{position:relative;width:100%;aspect-ratio:1080/1350;overflow:hidden;border-radius:6px;
+  box-shadow:0 32px 80px rgba(0,0,0,.8),0 0 0 1px rgba(200,162,106,.06);}
+
+/* post inner — fixed 1080×1350, scaled by JS */
+.pi{position:absolute;top:0;left:0;width:1080px;height:1350px;transform-origin:top left;}
+
+/* ── Joe's Brew UI atoms ── */
+/* nav bar */
+.jn{width:100%;background:var(--e);display:flex;align-items:center;
+  justify-content:space-between;padding:0 36px;flex-shrink:0;}
+.jn-logo{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--c);}
+.jn-sub{font-size:.5em;letter-spacing:.2em;opacity:.5;display:block;margin-top:1px;}
+.jn-nav{display:flex;gap:28px;align-items:center;}
+.jn-link{font-family:'Arial Narrow',Arial,sans-serif;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(245,236,215,.55);}
+.jn-cart{background:var(--g);border-radius:20px;padding:6px 16px;
+  font-family:'Arial Narrow',Arial,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--e);}
+
+/* hero section */
+.jh{width:100%;background:var(--e);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;}
+.jh-glow{position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,162,106,.22) 0%,transparent 68%);}
+.jh-eyebrow{font-family:'Arial Narrow',Arial,sans-serif;font-size:13px;
+  letter-spacing:.4em;text-transform:uppercase;color:var(--g);opacity:.7;
+  position:relative;z-index:1;}
+.jh-title{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  text-transform:uppercase;color:var(--c);position:relative;z-index:1;
+  text-align:center;line-height:.88;}
+.jh-sub{font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--bg);position:relative;z-index:1;margin-top:8px;}
+.jh-btn{background:var(--g);border-radius:40px;font-family:'Arial Narrow',Arial,sans-serif;
+  font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--e);
+  position:relative;z-index:1;display:flex;align-items:center;gap:6px;}
+
+/* menu section */
+.jm{width:100%;background:var(--c);flex-shrink:0;}
+.jm-hd{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;color:var(--b);}
+.jm-sub{font-size:11px;letter-spacing:.25em;text-transform:uppercase;
+  color:rgba(74,37,17,.45);}
+
+/* menu card */
+.mc{background:#fff;border-radius:14px;overflow:hidden;
+  box-shadow:0 4px 20px rgba(74,37,17,.1);}
+.mc-img{width:100%;position:relative;overflow:hidden;}
+.mc-img-inner{width:100%;height:100%;position:absolute;inset:0;}
+.mc-badge{position:absolute;top:10px;left:10px;background:rgba(26,13,5,.7);
+  border-radius:12px;padding:3px 10px;
+  font-family:'Arial Narrow',Arial,sans-serif;font-size:9px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bg);}
+.mc-body{padding:12px 14px 14px;}
+.mc-name{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;color:var(--b);}
+.mc-desc{font-size:10px;color:rgba(74,37,17,.5);line-height:1.45;margin-top:3px;}
+.mc-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.mc-price{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--b);}
+.mc-stars{display:flex;gap:2px;}
+.star{width:9px;height:9px;background:var(--g);
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+.star-e{opacity:.25;}
+.mc-sizes{display:flex;gap:6px;margin-top:8px;}
+.sz{border:1px solid rgba(74,37,17,.18);border-radius:20px;
+  padding:3px 10px;font-size:9px;letter-spacing:.06em;
+  font-family:'Arial Narrow',Arial,sans-serif;color:var(--b);}
+.sz.a{background:var(--b);color:var(--c);border-color:var(--b);}
+
+/* branches strip */
+.jbr{background:var(--b);display:flex;justify-content:center;gap:60px;align-items:center;flex-shrink:0;}
+.jbr-item{text-align:center;}
+.jbr-emoji{font-size:20px;}
+.jbr-name{font-family:'Arial Narrow',Arial,sans-serif;font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--bg);margin-top:4px;}
+
+/* about section */
+.ja{width:100%;background:var(--e);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;}
+
+/* device frames */
+.browser{background:#1C1C1E;border-radius:14px;overflow:hidden;
+  box-shadow:0 60px 160px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.05);}
+.bbar{height:40px;background:#2C2C2E;display:flex;align-items:center;padding:0 16px;gap:7px;flex-shrink:0;}
+.bdot{width:13px;height:13px;border-radius:50%;}
+.burl{flex:1;height:24px;background:#3C3C3E;border-radius:12px;margin-left:10px;
+  display:flex;align-items:center;padding:0 14px;gap:8px;}
+.burl-lock{width:8px;height:8px;border:1.5px solid rgba(255,255,255,.3);border-radius:50%;
+  position:relative;flex-shrink:0;}
+.burl span{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.03em;}
+.bscreen{overflow:hidden;display:flex;flex-direction:column;}
+
+.phone{background:#0B0B0B;border-radius:52px;overflow:hidden;position:relative;
+  box-shadow:0 80px 180px rgba(0,0,0,.8),0 0 0 2px rgba(255,255,255,.07),
+             inset 0 0 0 3px #1E1E1E;}
+.pnotch{position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:96px;height:30px;background:#0B0B0B;border-radius:0 0 20px 20px;z-index:10;}
+.pscreen{overflow:hidden;display:flex;flex-direction:column;}
+.pstatus{display:flex;justify-content:space-between;align-items:center;
+  padding:0 24px;background:var(--e);}
+.pstatus-time{font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:#fff;}
+.pstatus-icons{display:flex;gap:4px;align-items:center;}
+.pbat{width:22px;height:10px;border:1.5px solid rgba(255,255,255,.4);border-radius:3px;
+  position:relative;display:flex;align-items:center;padding:1.5px;}
+.pbat::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  width:3px;height:5px;background:rgba(255,255,255,.3);border-radius:0 2px 2px 0;}
+.pbat-inner{height:100%;width:80%;background:#fff;border-radius:1px;}
+
+.monitor{background:#1A1A1A;border-radius:16px;overflow:hidden;
+  box-shadow:0 50px 130px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.04);}
+.mbar{height:36px;background:#252525;display:flex;align-items:center;justify-content:center;}
+.mcam{width:8px;height:8px;border-radius:50%;background:#333;}
+.mscreen{overflow:hidden;display:flex;flex-direction:column;}
+.mstand{width:110px;height:20px;background:#222;margin:0 auto;border-radius:0 0 8px 8px;}
+.mbase{width:200px;height:8px;background:#1C1C1C;border-radius:4px;margin:0 auto;}
+
+/* label overlay */
+.lbl{position:absolute;font-family:'Arial Narrow',Arial,sans-serif;
+  letter-spacing:.25em;text-transform:uppercase;}
+</style>
+</head>
+<body>
+<div class="gal">
+
+<!-- ═══════════
+  POST 1
+  Dark espresso bg · full browser · homepage hero
+═══════════ -->
+<div class="pw" data-n="01 — Homepage Hero">
+<div class="pi" style="background:#0E0704;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;position:relative;">
+  <canvas id="c1" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+  <div style="position:relative;z-index:1;padding:80px;width:100%;">
+    <div class="browser" style="width:100%;">
+      <div class="bbar">
+        <div class="bdot" style="background:#FF5F57;"></div>
+        <div class="bdot" style="background:#FEBC2E;"></div>
+        <div class="bdot" style="background:#28C840;"></div>
+        <div class="burl"><div class="burl-lock"></div><span>joesbrew.ph</span></div>
+      </div>
+      <div class="bscreen">
+        <div class="jn" style="height:60px;"><div class="jn-logo" style="font-size:20px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link">Menu</span><span class="jn-link">Branches</span><span class="jn-link">About</span><div class="jn-cart">Order Now</div></div></div>
+        <div class="jh" style="height:420px;">
+          <div class="jh-glow" style="width:700px;height:700px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div class="jh-eyebrow" style="margin-bottom:16px;">EST. 1939 · BOHOL, PHILIPPINES</div>
+          <div class="jh-title" style="font-size:110px;">JOE'S<br>BREW</div>
+          <div class="jh-sub" style="margin-top:14px;">Cogtong · Candijay · Loboc</div>
+          <div class="jh-btn" style="margin-top:28px;padding:14px 40px;font-size:16px;">☕ Order Now</div>
+        </div>
+        <!-- top of menu -->
+        <div class="jm" style="padding:32px 28px 28px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div class="jm-sub">What we're serving</div>
+            <div class="jm-hd" style="font-size:44px;margin-top:4px;">OUR MENU</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C 0%,#7A3418 50%,#3D1C0C 100%);"></div><div class="mc-badge">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Caramel Latte</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030 0%,#1A4A60 50%,#0D2030 100%);"></div><div class="mc-badge">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Classic Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1E0D35 0%,#4A1E70 50%,#1E0D35 100%);"></div><div class="mc-badge">FRAPPE</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Avocado Frappe</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱59</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1A2A10 0%,#3A6020 50%,#1A2A10 100%);"></div><div class="mc-badge">MILK TEA</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Classic Milk Tea</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:36px;left:80px;right:80px;display:flex;justify-content:space-between;z-index:1;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.3em;text-transform:uppercase;color:rgba(200,162,106,.4);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.2em;color:rgba(200,162,106,.25);">01 / 10</span>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 2
+  Cream bg · perspective tilt browser
+═══════════ -->
+<div class="pw" data-n="02 — Perspective View">
+<div class="pi" style="background:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 60px;gap:0;position:relative;overflow:hidden;">
+  <!-- subtle grid bg -->
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(74,37,17,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(74,37,17,.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;"></div>
+  <div style="position:relative;width:100%;perspective:1800px;perspective-origin:50% 20%;">
+    <div style="transform:rotateX(16deg) rotateY(-4deg) scale(.95);transform-origin:top center;">
+      <div class="browser">
+        <div class="bbar">
+          <div class="bdot" style="background:#FF5F57;"></div>
+          <div class="bdot" style="background:#FEBC2E;"></div>
+          <div class="bdot" style="background:#28C840;"></div>
+          <div class="burl"><div class="burl-lock"></div><span>joesbrew.ph</span></div>
+        </div>
+        <div class="bscreen">
+          <div class="jn" style="height:54px;"><div class="jn-logo" style="font-size:18px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link">Menu</span><span class="jn-link">Branches</span><span class="jn-link">About</span><div class="jn-cart">Order Now</div></div></div>
+          <div class="jh" style="height:340px;">
+            <div class="jh-glow" style="width:600px;height:600px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+            <div class="jh-eyebrow" style="font-size:12px;margin-bottom:12px;">EST. 1939 · BOHOL</div>
+            <div class="jh-title" style="font-size:90px;">JOE'S<br>BREW</div>
+            <div class="jh-sub" style="font-size:11px;margin-top:12px;">Cogtong · Candijay · Loboc</div>
+            <div class="jh-btn" style="margin-top:22px;padding:12px 32px;font-size:14px;">Order Now →</div>
+          </div>
+          <div class="jm" style="padding:24px;">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C,#7A3418);"></div></div><div class="mc-body"><div class="mc-name" style="font-size:11px;">Caramel Latte</div><div class="mc-row"><div class="mc-price" style="font-size:12px;">₱49</div><div class="mc-stars"><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div></div></div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030,#1A4A60);"></div></div><div class="mc-body"><div class="mc-name" style="font-size:11px;">Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:12px;">₱39</div><div class="mc-stars"><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div></div></div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1E0D35,#4A1E70);"></div></div><div class="mc-body"><div class="mc-name" style="font-size:11px;">Frappe</div><div class="mc-row"><div class="mc-price" style="font-size:12px;">₱59</div><div class="mc-stars"><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star star-e" style="width:7px;height:7px;"></div></div></div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1A2A10,#3A6020);"></div></div><div class="mc-body"><div class="mc-name" style="font-size:11px;">Milk Tea</div><div class="mc-row"><div class="mc-price" style="font-size:12px;">₱49</div><div class="mc-stars"><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star" style="width:7px;height:7px;"></div><div class="star star-e" style="width:7px;height:7px;"></div></div></div></div></div>
+            </div>
+          </div>
+          <div class="jbr" style="height:50px;gap:40px;">
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:14px;">☕</div><div class="jbr-name" style="font-size:9px;">COGTONG</div></div>
+            <div style="width:1px;height:24px;background:rgba(245,236,215,.1);"></div>
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:14px;">🌿</div><div class="jbr-name" style="font-size:9px;">CANDIJAY</div></div>
+            <div style="width:1px;height:24px;background:rgba(245,236,215,.1);"></div>
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:14px;">🌊</div><div class="jbr-name" style="font-size:9px;">LOBOC</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- bottom label -->
+  <div style="position:absolute;bottom:40px;left:60px;right:60px;display:flex;justify-content:space-between;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:rgba(74,37,17,.3);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.2em;color:rgba(74,37,17,.2);">02 / 10</span>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 3
+  Dark · centered phone · mobile hero
+═══════════ -->
+<div class="pw" data-n="03 — Mobile Homepage">
+<div class="pi" style="background:#0A0603;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px;position:relative;overflow:hidden;">
+  <canvas id="c3" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.35em;text-transform:uppercase;color:rgba(200,162,106,.45);">MOBILE EXPERIENCE</span>
+  </div>
+  <!-- phone -->
+  <div class="phone" style="width:380px;height:780px;position:relative;z-index:1;">
+    <div class="pnotch"></div>
+    <div class="pscreen" style="padding-top:30px;background:var(--e);height:780px;overflow:hidden;">
+      <div class="pstatus" style="height:32px;padding:0 28px;"><span class="pstatus-time" style="font-size:12px;">9:41</span><div class="pstatus-icons"><div class="pbat"><div class="pbat-inner"></div></div></div></div>
+      <div class="jn" style="height:56px;padding:0 24px;"><div class="jn-logo" style="font-size:17px;">Joe's Brew<span class="jn-sub" style="font-size:9px;">EST. 1939</span></div><div style="display:flex;flex-direction:column;gap:5px;width:24px;"><div style="height:2px;background:rgba(245,236,215,.55);border-radius:1px;"></div><div style="height:2px;background:rgba(245,236,215,.55);border-radius:1px;width:70%;"></div><div style="height:2px;background:rgba(245,236,215,.55);border-radius:1px;"></div></div></div>
+      <div class="jh" style="height:280px;">
+        <div class="jh-glow" style="width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+        <div class="jh-eyebrow" style="font-size:12px;margin-bottom:10px;">EST. 1939 · BOHOL</div>
+        <div class="jh-title" style="font-size:72px;">JOE'S<br>BREW</div>
+        <div class="jh-sub" style="font-size:11px;margin-top:8px;">Cogtong · Candijay · Loboc</div>
+        <div class="jh-btn" style="margin-top:20px;padding:13px 32px;font-size:14px;">☕ Order Now</div>
+      </div>
+      <div class="jm" style="padding:20px;">
+        <div style="text-align:center;margin-bottom:16px;"><div class="jm-sub" style="font-size:10px;">What we're serving</div><div class="jm-hd" style="font-size:28px;margin-top:2px;">OUR MENU</div></div>
+        <!-- horizontal scroll row (simulated) -->
+        <div style="display:flex;gap:12px;overflow:hidden;">
+          <div class="mc" style="min-width:160px;"><div class="mc-img" style="padding-top:75%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C,#7A3418);"></div><div class="mc-badge" style="font-size:8px;">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:12px;">Caramel Latte</div><div class="mc-row"><div class="mc-price" style="font-size:13px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+          <div class="mc" style="min-width:160px;"><div class="mc-img" style="padding-top:75%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030,#1A4A60);"></div><div class="mc-badge" style="font-size:8px;">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:12px;">Classic Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:13px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;z-index:1;text-align:center;">
+    <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:36px;letter-spacing:.04em;text-transform:uppercase;color:var(--c);line-height:1;">LOOKS BEAUTIFUL<br>ON EVERY SCREEN.</div>
+    <div style="font-size:14px;letter-spacing:.25em;color:rgba(200,162,106,.4);margin-top:10px;font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;">HBG PRODUCTION · 03 / 10</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 4
+  Cream · browser showing menu section
+═══════════ -->
+<div class="pw" data-n="04 — Menu Section">
+<div class="pi" style="background:var(--c);display:flex;flex-direction:column;padding:70px 65px;gap:0;position:relative;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:rgba(74,37,17,.35);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:15px;letter-spacing:.2em;color:rgba(74,37,17,.2);">04 / 10</span>
+  </div>
+  <div class="browser">
+    <div class="bbar">
+      <div class="bdot" style="background:#FF5F57;"></div>
+      <div class="bdot" style="background:#FEBC2E;"></div>
+      <div class="bdot" style="background:#28C840;"></div>
+      <div class="burl"><div class="burl-lock"></div><span>joesbrew.ph/#menu</span></div>
+    </div>
+    <div class="bscreen">
+      <div class="jn" style="height:52px;"><div class="jn-logo" style="font-size:17px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link" style="color:var(--g);border-bottom:2px solid var(--g);padding-bottom:2px;">Menu</span><span class="jn-link">Branches</span><span class="jn-link">About</span><div class="jn-cart">Order Now</div></div></div>
+      <div class="jm" style="padding:30px 26px;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div class="jm-sub">What we're serving</div>
+          <div class="jm-hd" style="font-size:52px;margin-top:4px;">OUR MENU</div>
+          <div style="font-size:13px;color:rgba(74,37,17,.4);margin-top:6px;">☕ Cogtong Branch</div>
+        </div>
+        <!-- category label -->
+        <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.06em;color:var(--b);margin-bottom:14px;">HOT BREW</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C 0%,#7A3418 60%,#4A200F 100%);"></div><div class="mc-badge">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Caramel Latte</div><div class="mc-desc">Rich espresso with smooth caramel and silky milk.</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#2A1008 0%,#5C2810 60%,#2A1008 100%);"></div><div class="mc-badge">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Spanish Latte</div><div class="mc-desc">Bold espresso layered with sweet condensed milk.</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1E0C06 0%,#4A1C08 60%,#1E0C06 100%);"></div><div class="mc-badge">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Hazelnut Brew</div><div class="mc-desc">Classic brew with warm hazelnut notes.</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+        </div>
+        <!-- cold brew row -->
+        <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.06em;color:var(--b);margin-bottom:14px;">COLD BREW</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030 0%,#1A4A60 60%,#0D2030 100%);"></div><div class="mc-badge">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Classic Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0A1820 0%,#163450 60%,#0A1820 100%);"></div><div class="mc-badge">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Salted Caramel</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+          <div class="mc"><div class="mc-img" style="padding-top:72%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#102028 0%,#204050 60%,#102028 100%);"></div><div class="mc-badge">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Spanish Iced</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div><div class="mc-sizes"><div class="sz a">Medio</div><div class="sz">Grande</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 5
+  Dark · desktop + phone responsive pair
+═══════════ -->
+<div class="pw" data-n="05 — Responsive Design">
+<div class="pi" style="background:#0E0704;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 60px;gap:32px;position:relative;overflow:hidden;">
+  <canvas id="c5" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;margin-bottom:8px;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.35em;text-transform:uppercase;color:rgba(200,162,106,.4);">RESPONSIVE BY DESIGN</span>
+  </div>
+  <!-- devices row -->
+  <div style="position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:center;gap:32px;width:100%;">
+    <!-- browser -->
+    <div class="browser" style="flex:1;max-width:680px;">
+      <div class="bbar">
+        <div class="bdot" style="background:#FF5F57;"></div>
+        <div class="bdot" style="background:#FEBC2E;"></div>
+        <div class="bdot" style="background:#28C840;"></div>
+        <div class="burl"><div class="burl-lock"></div><span>joesbrew.ph</span></div>
+      </div>
+      <div class="bscreen">
+        <div class="jn" style="height:46px;"><div class="jn-logo" style="font-size:15px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link" style="font-size:10px;">Menu</span><span class="jn-link" style="font-size:10px;">Branches</span><span class="jn-link" style="font-size:10px;">About</span><div class="jn-cart" style="font-size:10px;padding:5px 12px;">Order</div></div></div>
+        <div class="jh" style="height:260px;">
+          <div class="jh-glow" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div class="jh-eyebrow" style="font-size:10px;margin-bottom:8px;">EST. 1939 · BOHOL</div>
+          <div class="jh-title" style="font-size:72px;">JOE'S<br>BREW</div>
+          <div class="jh-sub" style="font-size:9px;">Cogtong · Candijay · Loboc</div>
+          <div class="jh-btn" style="margin-top:16px;padding:10px 24px;font-size:12px;">Order Now</div>
+        </div>
+        <div class="jm" style="padding:16px;">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C,#7A3418);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:10px;">Caramel Latte</div><div class="mc-row"><div class="mc-price" style="font-size:11px;">₱49</div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030,#1A4A60);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:10px;">Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:11px;">₱39</div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1E0D35,#4A1E70);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:10px;">Frappe</div><div class="mc-row"><div class="mc-price" style="font-size:11px;">₱59</div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1A2A10,#3A6020);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:10px;">Milk Tea</div><div class="mc-row"><div class="mc-price" style="font-size:11px;">₱49</div></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- phone -->
+    <div class="phone" style="width:200px;height:400px;flex-shrink:0;">
+      <div class="pnotch" style="width:60px;height:18px;border-radius:0 0 12px 12px;"></div>
+      <div class="pscreen" style="padding-top:18px;background:var(--e);height:400px;overflow:hidden;">
+        <div class="pstatus" style="height:22px;padding:0 16px;"><span class="pstatus-time" style="font-size:9px;">9:41</span></div>
+        <div class="jn" style="height:36px;padding:0 14px;"><div class="jn-logo" style="font-size:11px;">Joe's Brew</div><div style="width:16px;height:14px;display:flex;flex-direction:column;justify-content:center;gap:3px;"><div style="height:1.5px;background:rgba(245,236,215,.5);border-radius:1px;"></div><div style="height:1.5px;background:rgba(245,236,215,.5);border-radius:1px;width:70%;"></div><div style="height:1.5px;background:rgba(245,236,215,.5);border-radius:1px;"></div></div></div>
+        <div class="jh" style="height:160px;">
+          <div class="jh-glow" style="width:240px;height:240px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div class="jh-title" style="font-size:40px;">JOE'S<br>BREW</div>
+          <div class="jh-btn" style="margin-top:10px;padding:8px 18px;font-size:9px;">Order Now</div>
+        </div>
+        <div class="jm" style="padding:10px;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="mc" style="display:flex;"><div class="mc-img" style="width:50px;min-width:50px;height:50px;position:relative;flex-shrink:0;"><div class="mc-img-inner" style="position:absolute;inset:0;background:linear-gradient(150deg,#3D1C0C,#7A3418);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:9px;">Caramel Latte</div><div class="mc-price" style="font-size:10px;">₱49</div></div></div>
+            <div class="mc" style="display:flex;"><div class="mc-img" style="width:50px;min-width:50px;height:50px;position:relative;flex-shrink:0;"><div class="mc-img-inner" style="position:absolute;inset:0;background:linear-gradient(150deg,#0D2030,#1A4A60);"></div></div><div class="mc-body" style="padding:8px 10px;"><div class="mc-name" style="font-size:9px;">Cold Brew</div><div class="mc-price" style="font-size:10px;">₱39</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;z-index:1;text-align:center;">
+    <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:32px;letter-spacing:.04em;text-transform:uppercase;color:var(--c);line-height:1;">EVERY DEVICE.<br>EVERY CUSTOMER.</div>
+    <div style="font-size:13px;letter-spacing:.22em;color:rgba(200,162,106,.35);margin-top:8px;font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;">HBG PRODUCTION · 05 / 10</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 6
+  Dark brown · order flow on phone
+═══════════ -->
+<div class="pw" data-n="06 — Order Flow">
+<div class="pi" style="background:var(--b);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px;position:relative;overflow:hidden;">
+  <canvas id="c6" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.35em;text-transform:uppercase;color:rgba(200,162,106,.5);">SEAMLESS ORDERING</span>
+  </div>
+  <div class="phone" style="width:360px;height:740px;position:relative;z-index:1;">
+    <div class="pnotch"></div>
+    <div class="pscreen" style="padding-top:30px;background:var(--e);height:740px;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="pstatus" style="height:30px;padding:0 24px;"><span class="pstatus-time" style="font-size:11px;">9:41</span><div class="pbat"><div class="pbat-inner"></div></div></div>
+      <div class="jn" style="height:52px;padding:0 20px;"><div class="jn-logo" style="font-size:15px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div style="background:rgba(200,162,106,.15);border-radius:20px;padding:5px 14px;"><span style="font-size:10px;color:var(--g);font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;letter-spacing:.1em;">CART (2)</span></div></div>
+      <!-- checkout form -->
+      <div style="flex:1;background:var(--c);padding:20px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+        <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.05em;color:var(--b);">YOUR ORDER</div>
+        <!-- items -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#fff;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(74,37,17,.08);">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#3D1C0C,#7A3418);flex-shrink:0;"></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;">Caramel Latte</div><div style="font-size:9px;color:rgba(74,37,17,.45);margin-top:2px;">Medio · Qty 1</div></div>
+            </div>
+            <div style="font-size:13px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--b);">₱49</div>
+          </div>
+          <div style="background:#fff;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(74,37,17,.08);">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1E0D35,#4A1E70);flex-shrink:0;"></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;">Avocado Frappe</div><div style="font-size:9px;color:rgba(74,37,17,.45);margin-top:2px;">Grande · Qty 1</div></div>
+            </div>
+            <div style="font-size:13px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--b);">₱59</div>
+          </div>
+        </div>
+        <!-- divider + total -->
+        <div style="border-top:1px solid rgba(74,37,17,.1);padding-top:12px;">
+          <div style="display:flex;justify-content:space-between;"><span style="font-size:11px;color:rgba(74,37,17,.5);">Subtotal</span><span style="font-size:11px;color:var(--b);">₱108.00</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:11px;color:rgba(74,37,17,.5);">Delivery</span><span style="font-size:11px;color:var(--b);">₱30.00</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;border-top:1px solid rgba(74,37,17,.1);padding-top:8px;"><span style="font-size:13px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--b);">TOTAL</span><span style="font-size:13px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--b);">₱138.00</span></div>
+        </div>
+        <!-- form fields -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1.5px solid rgba(200,162,106,.4);"><span style="font-size:10px;color:rgba(74,37,17,.4);">Your Name</span><div style="font-size:12px;color:var(--b);margin-top:3px;">Juan dela Cruz</div></div>
+          <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1px solid rgba(74,37,17,.08);"><span style="font-size:10px;color:rgba(74,37,17,.4);">Phone</span><div style="font-size:12px;color:var(--b);margin-top:3px;">09XX XXX XXXX</div></div>
+          <div style="background:#fff;border-radius:10px;padding:12px 14px;border:1px solid rgba(74,37,17,.08);"><span style="font-size:10px;color:rgba(74,37,17,.4);">GCash Ref No.</span><div style="font-size:12px;color:var(--b);margin-top:3px;">1234567890123</div></div>
+        </div>
+        <!-- CTA -->
+        <div style="background:var(--b);border-radius:12px;height:48px;display:flex;align-items:center;justify-content:center;margin-top:auto;"><span style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:14px;letter-spacing:.15em;text-transform:uppercase;color:var(--c);">PLACE ORDER</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;z-index:1;text-align:center;">
+    <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:34px;letter-spacing:.04em;text-transform:uppercase;color:var(--c);line-height:1;">ORDER IN MINUTES.<br>PICK UP IN STYLE.</div>
+    <div style="font-size:13px;letter-spacing:.22em;color:rgba(200,162,106,.4);margin-top:8px;font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;">HBG PRODUCTION · 06 / 10</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 7
+  Very light cream · close-up menu cards
+═══════════ -->
+<div class="pw" data-n="07 — Menu Cards Close-Up">
+<div class="pi" style="background:#FAF4E8;display:flex;flex-direction:column;padding:70px 65px;gap:0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;">
+    <div><div style="font-family:'Arial Narrow',Arial,sans-serif;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:rgba(74,37,17,.35);margin-bottom:6px;">HBG PRODUCTION · 07 / 10</div><div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:52px;text-transform:uppercase;color:var(--b);line-height:.9;">OUR<br>MENU</div></div>
+    <div style="text-align:right;"><div style="font-size:11px;color:rgba(74,37,17,.4);letter-spacing:.2em;font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;">☕ Cogtong Branch</div></div>
+  </div>
+  <!-- large cards 2-col -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;">
+    <div class="mc" style="display:flex;flex-direction:column;">
+      <div class="mc-img" style="padding-top:80%;position:relative;">
+        <div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#7A3418,#3D1C0C 70%);"></div>
+        <div class="mc-badge" style="font-size:10px;padding:5px 14px;">HOT BREW</div>
+        <div style="position:absolute;bottom:12px;right:12px;background:rgba(200,162,106,.9);border-radius:20px;padding:5px 14px;"><span style="font-size:11px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--e);">⭐ 4.9</span></div>
+      </div>
+      <div class="mc-body" style="padding:16px 18px 18px;flex:1;">
+        <div class="mc-name" style="font-size:16px;">Caramel Latte</div>
+        <div class="mc-desc" style="font-size:12px;margin-top:6px;line-height:1.5;">Rich espresso with smooth caramel and silky steamed milk. A cafe classic.</div>
+        <div class="mc-sizes" style="margin-top:12px;gap:8px;"><div class="sz a" style="font-size:11px;padding:5px 14px;">Medio ₱49</div><div class="sz" style="font-size:11px;padding:5px 14px;">Grande ₱59</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <div style="background:rgba(200,162,106,.12);border-radius:14px;padding:3px 10px;font-size:9px;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.05em;">+Cream Cheese</div>
+          <div style="background:rgba(200,162,106,.12);border-radius:14px;padding:3px 10px;font-size:9px;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.05em;">+Whip Cream</div>
+        </div>
+      </div>
+    </div>
+    <div class="mc" style="display:flex;flex-direction:column;">
+      <div class="mc-img" style="padding-top:80%;position:relative;">
+        <div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#4A1E70,#1E0D35 70%);"></div>
+        <div class="mc-badge" style="font-size:10px;padding:5px 14px;">FRAPPE</div>
+        <div style="position:absolute;bottom:12px;right:12px;background:rgba(200,162,106,.9);border-radius:20px;padding:5px 14px;"><span style="font-size:11px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--e);">⭐ 4.8</span></div>
+      </div>
+      <div class="mc-body" style="padding:16px 18px 18px;flex:1;">
+        <div class="mc-name" style="font-size:16px;">Avocado Frappe</div>
+        <div class="mc-desc" style="font-size:12px;margin-top:6px;line-height:1.5;">Creamy blended avocado with a smooth, naturally sweet finish.</div>
+        <div class="mc-sizes" style="margin-top:12px;gap:8px;"><div class="sz a" style="font-size:11px;padding:5px 14px;">Medio ₱49</div><div class="sz" style="font-size:11px;padding:5px 14px;">Grande ₱59</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <div style="background:rgba(200,162,106,.12);border-radius:14px;padding:3px 10px;font-size:9px;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.05em;">+Coffee Jelly</div>
+          <div style="background:rgba(200,162,106,.12);border-radius:14px;padding:3px 10px;font-size:9px;color:var(--b);font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.05em;">+Tapioca</div>
+        </div>
+      </div>
+    </div>
+    <div class="mc" style="display:flex;flex-direction:column;">
+      <div class="mc-img" style="padding-top:80%;position:relative;">
+        <div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#1A4A60,#0D2030 70%);"></div>
+        <div class="mc-badge" style="font-size:10px;padding:5px 14px;">COLD BREW</div>
+        <div style="position:absolute;bottom:12px;right:12px;background:rgba(200,162,106,.9);border-radius:20px;padding:5px 14px;"><span style="font-size:11px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--e);">⭐ 4.9</span></div>
+      </div>
+      <div class="mc-body" style="padding:16px 18px 18px;flex:1;">
+        <div class="mc-name" style="font-size:16px;">Classic Cold Brew</div>
+        <div class="mc-desc" style="font-size:12px;margin-top:6px;line-height:1.5;">Slow-steeped, bold and smooth. Pure cold brew perfection.</div>
+        <div class="mc-sizes" style="margin-top:12px;gap:8px;"><div class="sz a" style="font-size:11px;padding:5px 14px;">Medio ₱39</div><div class="sz" style="font-size:11px;padding:5px 14px;">Grande ₱49</div></div>
+      </div>
+    </div>
+    <div class="mc" style="display:flex;flex-direction:column;">
+      <div class="mc-img" style="padding-top:80%;position:relative;">
+        <div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#3A6020,#1A2A10 70%);"></div>
+        <div class="mc-badge" style="font-size:10px;padding:5px 14px;">MILK TEA</div>
+        <div style="position:absolute;bottom:12px;right:12px;background:rgba(200,162,106,.9);border-radius:20px;padding:5px 14px;"><span style="font-size:11px;font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:var(--e);">⭐ 4.7</span></div>
+      </div>
+      <div class="mc-body" style="padding:16px 18px 18px;flex:1;">
+        <div class="mc-name" style="font-size:16px;">Classic Milk Tea</div>
+        <div class="mc-desc" style="font-size:12px;margin-top:6px;line-height:1.5;">Smooth, bold milk tea with rich depth of flavor in every sip.</div>
+        <div class="mc-sizes" style="margin-top:12px;gap:8px;"><div class="sz a" style="font-size:11px;padding:5px 14px;">Medio ₱49</div><div class="sz" style="font-size:11px;padding:5px 14px;">Grande ₱59</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 8
+  Dark espresso · full-page scroll reveal (stacked sections)
+═══════════ -->
+<div class="pw" data-n="08 — Full Page Scroll">
+<div class="pi" style="background:#0A0603;display:flex;align-items:center;justify-content:center;padding:70px 80px;position:relative;overflow:hidden;">
+  <canvas id="c8" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;width:100%;">
+    <!-- tall browser showing multiple sections -->
+    <div class="browser">
+      <div class="bbar">
+        <div class="bdot" style="background:#FF5F57;"></div>
+        <div class="bdot" style="background:#FEBC2E;"></div>
+        <div class="bdot" style="background:#28C840;"></div>
+        <div class="burl"><div class="burl-lock"></div><span>joesbrew.ph</span></div>
+      </div>
+      <div class="bscreen" style="max-height:1080px;overflow:hidden;">
+        <!-- nav -->
+        <div class="jn" style="height:52px;"><div class="jn-logo" style="font-size:17px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link">Menu</span><span class="jn-link">Branches</span><span class="jn-link">About</span><div class="jn-cart">Order Now</div></div></div>
+        <!-- hero -->
+        <div class="jh" style="height:280px;">
+          <div class="jh-glow" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div class="jh-eyebrow" style="font-size:11px;margin-bottom:10px;">EST. 1939 · BOHOL, PHILIPPINES</div>
+          <div class="jh-title" style="font-size:84px;">JOE'S<br>BREW</div>
+          <div class="jh-sub" style="font-size:10px;margin-top:10px;">Cogtong · Candijay · Loboc</div>
+          <div class="jh-btn" style="margin-top:18px;padding:11px 28px;font-size:13px;">☕ Order Now</div>
+        </div>
+        <!-- menu -->
+        <div class="jm" style="padding:24px;">
+          <div style="text-align:center;margin-bottom:18px;"><div class="jm-sub" style="font-size:9px;">What we're serving</div><div class="jm-hd" style="font-size:38px;margin-top:3px;">OUR MENU</div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#3D1C0C,#7A3418);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Caramel Latte</div><div class="mc-price" style="font-size:10px;">₱49</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#0D2030,#1A4A60);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Cold Brew</div><div class="mc-price" style="font-size:10px;">₱39</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1E0D35,#4A1E70);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Frappe</div><div class="mc-price" style="font-size:10px;">₱59</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#1A2A10,#3A6020);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Milk Tea</div><div class="mc-price" style="font-size:10px;">₱49</div></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#30180A,#6A3210);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Barista Sign.</div><div class="mc-price" style="font-size:10px;">₱59</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#2A1010,#5A2020);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Fruit Blend</div><div class="mc-price" style="font-size:10px;">₱49</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#20100A,#40200A);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Waffles</div><div class="mc-price" style="font-size:10px;">₱59</div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:linear-gradient(150deg,#201808,#402A08);"></div></div><div class="mc-body" style="padding:8px;"><div class="mc-name" style="font-size:10px;">Nachos</div><div class="mc-price" style="font-size:10px;">₱89</div></div></div>
+          </div>
+        </div>
+        <!-- branches -->
+        <div class="jbr" style="height:80px;gap:60px;">
+          <div class="jbr-item"><div class="jbr-emoji">☕</div><div class="jbr-name">COGTONG</div></div>
+          <div style="width:1px;height:32px;background:rgba(245,236,215,.08);"></div>
+          <div class="jbr-item"><div class="jbr-emoji">🌿</div><div class="jbr-name">CANDIJAY</div></div>
+          <div style="width:1px;height:32px;background:rgba(245,236,215,.08);"></div>
+          <div class="jbr-item"><div class="jbr-emoji">🌊</div><div class="jbr-name">LOBOC</div></div>
+        </div>
+        <!-- about stub -->
+        <div class="ja" style="height:160px;">
+          <div class="jh-glow" style="width:300px;height:300px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--g);opacity:.6;position:relative;z-index:1;">About Joe's Brew</div>
+          <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:30px;text-transform:uppercase;color:var(--c);position:relative;z-index:1;margin-top:6px;">CRAFTED WITH LOVE<br>SINCE 1939</div>
+        </div>
+        <!-- fade overlay -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(transparent,#0A0603);pointer-events:none;"></div>
+      </div>
+    </div>
+    <!-- scroll indicator -->
+    <div style="position:absolute;right:-30px;top:100px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div style="width:2px;height:80px;background:linear-gradient(to bottom,transparent,var(--g));"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 8px rgba(200,162,106,.5);"></div>
+      <div style="width:2px;height:40px;background:linear-gradient(to bottom,var(--g),transparent);"></div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:36px;left:80px;right:80px;display:flex;justify-content:space-between;z-index:1;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.25em;text-transform:uppercase;color:rgba(200,162,106,.35);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.2em;color:rgba(200,162,106,.2);">08 / 10</span>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 9
+  Deep espresso · monitor front-on · dramatic screen glow
+═══════════ -->
+<div class="pw" data-n="09 — Desktop Monitor">
+<div class="pi" style="background:#07040200;background:radial-gradient(ellipse at 50% 60%,#1A0D05 0%,#07040200 70%);background:#080503;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 70px;position:relative;overflow:hidden;">
+  <canvas id="c9" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;margin-bottom:32px;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:15px;letter-spacing:.35em;text-transform:uppercase;color:rgba(200,162,106,.4);">DESKTOP EXPERIENCE</span>
+  </div>
+  <div style="position:relative;z-index:1;width:100%;">
+    <div class="monitor">
+      <div class="mbar"><div class="mcam"></div></div>
+      <div class="mscreen">
+        <div class="jn" style="height:56px;"><div class="jn-logo" style="font-size:19px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link">Menu</span><span class="jn-link">Branches</span><span class="jn-link">About</span><div class="jn-cart">Order Now</div></div></div>
+        <div class="jh" style="height:360px;">
+          <div class="jh-glow" style="width:600px;height:600px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+          <div class="jh-eyebrow" style="font-size:12px;margin-bottom:14px;">EST. 1939 · BOHOL, PHILIPPINES</div>
+          <div class="jh-title" style="font-size:100px;">JOE'S<br>BREW</div>
+          <div class="jh-sub" style="font-size:11px;margin-top:12px;">Cogtong · Candijay · Loboc</div>
+          <div class="jh-btn" style="margin-top:24px;padding:14px 38px;font-size:15px;">☕ Order Now</div>
+        </div>
+        <div class="jm" style="padding:28px;">
+          <div style="text-align:center;margin-bottom:22px;"><div class="jm-sub">What we're serving</div><div class="jm-hd" style="font-size:46px;margin-top:4px;">OUR MENU</div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#7A3418,#3D1C0C 70%);"></div><div class="mc-badge">HOT BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Caramel Latte</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#1A4A60,#0D2030 70%);"></div><div class="mc-badge">COLD BREW</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Classic Cold Brew</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱39</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#4A1E70,#1E0D35 70%);"></div><div class="mc-badge">FRAPPE</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Avocado Frappe</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱59</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div></div></div>
+            <div class="mc"><div class="mc-img" style="padding-top:70%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#3A6020,#1A2A10 70%);"></div><div class="mc-badge">MILK TEA</div></div><div class="mc-body"><div class="mc-name" style="font-size:13px;">Classic Milk Tea</div><div class="mc-row"><div class="mc-price" style="font-size:14px;">₱49</div><div class="mc-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star star-e"></div></div></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mstand"></div>
+    <div class="mbase"></div>
+  </div>
+  <div style="position:absolute;bottom:36px;left:70px;right:70px;display:flex;justify-content:space-between;z-index:1;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.25em;text-transform:uppercase;color:rgba(200,162,106,.35);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14px;letter-spacing:.2em;color:rgba(200,162,106,.2);">09 / 10</span>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════
+  POST 10
+  Darkest · monitor + phone · maximum impact
+═══════════ -->
+<div class="pw" data-n="10 — The Full Experience">
+<div class="pi" style="background:#060402;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+  <canvas id="c10" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+  <!-- top bar -->
+  <div style="position:relative;z-index:1;padding:70px 80px 0;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.35em;text-transform:uppercase;color:rgba(200,162,106,.4);">HBG PRODUCTION</span>
+    <span style="font-family:'Arial Narrow',Arial,sans-serif;font-size:16px;letter-spacing:.2em;color:rgba(200,162,106,.2);">10 / 10</span>
+  </div>
+  <!-- headline -->
+  <div style="position:relative;z-index:1;padding:36px 80px 0;">
+    <div style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:88px;text-transform:uppercase;color:var(--c);line-height:.88;">THE FULL<br>EXPERIENCE.</div>
+    <p style="font-size:20px;color:rgba(245,236,215,.4);margin-top:18px;line-height:1.5;max-width:580px;">Every screen. Every customer. Every order. Beautiful, seamless, and made for Bohol.</p>
+  </div>
+  <!-- devices -->
+  <div style="position:relative;z-index:1;flex:1;display:flex;align-items:flex-end;justify-content:center;padding:40px 60px 0;gap:0;">
+    <!-- monitor -->
+    <div style="position:relative;flex:1;">
+      <div class="monitor">
+        <div class="mbar"><div class="mcam"></div></div>
+        <div class="mscreen">
+          <div class="jn" style="height:44px;"><div class="jn-logo" style="font-size:15px;">Joe's Brew<span class="jn-sub">EST. 1939</span></div><div class="jn-nav"><span class="jn-link" style="font-size:10px;">Menu</span><span class="jn-link" style="font-size:10px;">Branches</span><span class="jn-link" style="font-size:10px;">About</span><div class="jn-cart" style="font-size:10px;padding:5px 12px;">Order</div></div></div>
+          <div class="jh" style="height:220px;">
+            <div class="jh-glow" style="width:440px;height:440px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+            <div class="jh-eyebrow" style="font-size:9px;margin-bottom:8px;">EST. 1939 · BOHOL</div>
+            <div class="jh-title" style="font-size:66px;">JOE'S<br>BREW</div>
+            <div class="jh-sub" style="font-size:9px;margin-top:8px;">Cogtong · Candijay · Loboc</div>
+            <div class="jh-btn" style="margin-top:14px;padding:10px 24px;font-size:12px;">☕ Order Now</div>
+          </div>
+          <div class="jm" style="padding:16px;">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#7A3418,#3D1C0C 70%);"></div></div><div class="mc-body" style="padding:7px 8px;"><div class="mc-name" style="font-size:10px;">Caramel Latte</div><div class="mc-price" style="font-size:11px;">₱49</div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#1A4A60,#0D2030 70%);"></div></div><div class="mc-body" style="padding:7px 8px;"><div class="mc-name" style="font-size:10px;">Cold Brew</div><div class="mc-price" style="font-size:11px;">₱39</div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#4A1E70,#1E0D35 70%);"></div></div><div class="mc-body" style="padding:7px 8px;"><div class="mc-name" style="font-size:10px;">Frappe</div><div class="mc-price" style="font-size:11px;">₱59</div></div></div>
+              <div class="mc"><div class="mc-img" style="padding-top:65%;position:relative;"><div class="mc-img-inner" style="background:radial-gradient(ellipse at 40% 60%,#3A6020,#1A2A10 70%);"></div></div><div class="mc-body" style="padding:7px 8px;"><div class="mc-name" style="font-size:10px;">Milk Tea</div><div class="mc-price" style="font-size:11px;">₱49</div></div></div>
+            </div>
+          </div>
+          <div class="jbr" style="height:50px;gap:40px;">
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:12px;">☕</div><div class="jbr-name" style="font-size:8px;">COGTONG</div></div>
+            <div style="width:1px;height:20px;background:rgba(245,236,215,.07);"></div>
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:12px;">🌿</div><div class="jbr-name" style="font-size:8px;">CANDIJAY</div></div>
+            <div style="width:1px;height:20px;background:rgba(245,236,215,.07);"></div>
+            <div class="jbr-item"><div class="jbr-emoji" style="font-size:12px;">🌊</div><div class="jbr-name" style="font-size:8px;">LOBOC</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="mstand"></div>
+      <div class="mbase"></div>
+      <!-- phone leaning -->
+      <div class="phone" style="width:160px;height:330px;position:absolute;right:-55px;bottom:28px;transform:rotate(5deg);">
+        <div class="pnotch" style="width:56px;height:18px;border-radius:0 0 12px 12px;"></div>
+        <div class="pscreen" style="padding-top:18px;background:var(--e);height:330px;overflow:hidden;display:flex;flex-direction:column;">
+          <div class="pstatus" style="height:20px;padding:0 14px;"><span class="pstatus-time" style="font-size:9px;">9:41</span></div>
+          <div class="jn" style="height:34px;padding:0 12px;"><div class="jn-logo" style="font-size:10px;">Joe's Brew</div></div>
+          <div class="jh" style="height:130px;">
+            <div class="jh-glow" style="width:200px;height:200px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+            <div class="jh-title" style="font-size:30px;">JOE'S<br>BREW</div>
+            <div class="jh-btn" style="margin-top:8px;padding:7px 14px;font-size:8px;">Order Now</div>
+          </div>
+          <div style="background:var(--c);flex:1;padding:8px;display:flex;flex-direction:column;gap:5px;">
+            <div class="mc" style="display:flex;"><div style="width:36px;min-width:36px;height:36px;background:linear-gradient(135deg,#3D1C0C,#7A3418);border-radius:6px 0 0 6px;"></div><div style="padding:6px 8px;"><div class="mc-name" style="font-size:8px;">Caramel Latte</div><div class="mc-price" style="font-size:9px;">₱49</div></div></div>
+            <div class="mc" style="display:flex;"><div style="width:36px;min-width:36px;height:36px;background:linear-gradient(135deg,#0D2030,#1A4A60);border-radius:6px 0 0 6px;"></div><div style="padding:6px 8px;"><div class="mc-name" style="font-size:8px;">Cold Brew</div><div class="mc-price" style="font-size:9px;">₱39</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- footer CTA -->
+  <div style="position:relative;z-index:1;padding:32px 80px 60px;">
+    <div style="background:var(--g);border-radius:50px;height:68px;display:flex;align-items:center;justify-content:center;box-shadow:0 16px 48px rgba(200,162,106,.2);">
+      <span style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--e);">MESSAGE US TODAY</span>
+    </div>
+    <div style="text-align:center;margin-top:14px;"><span style="font-size:13px;color:rgba(200,162,106,.3);letter-spacing:.15em;font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;">Premium Websites · Affordable Pricing · Student-Led Creativity</span></div>
+  </div>
+</div>
+</div>
+
+</div><!-- .gal -->
+
+<script>
+// ── Scale each post-inner to fit its wrapper ──────────────────
+function scalePost(w){
+  const i=w.querySelector('.pi');
+  if(!i)return;
+  i.style.transform=`scale(${w.offsetWidth/1080})`;
+}
+function scaleAll(){document.querySelectorAll('.pw').forEach(scalePost);}
+window.addEventListener('load',scaleAll);
+window.addEventListener('resize',scaleAll);
+
+// ── Inject gallery-item wrappers + download buttons ───────────
+window.addEventListener('DOMContentLoaded',()=>{
+  // Download All button
+  const allBtn=document.createElement('button');
+  allBtn.className='dl-all';
+  allBtn.textContent='↓ Download All 10 Posts';
+  allBtn.onclick=downloadAll;
+  document.querySelector('.gal').before(allBtn);
+
+  // Wrap each .pw in .gi + add footer row
+  document.querySelectorAll('.pw').forEach((pw,i)=>{
+    const n=i+1;
+    const label=pw.dataset.n||`0${n}`;
+    const gi=document.createElement('div');
+    gi.className='gi';
+    pw.before(gi);
+    gi.appendChild(pw);
+    const ft=document.createElement('div');
+    ft.className='gi-ft';
+    ft.innerHTML=`<span class="gi-lbl">${label}</span>
+      <button class="dl" data-n="${n}" onclick="downloadPost(this,${n})">↓ Download PNG</button>`;
+    gi.appendChild(ft);
+  });
+});
+
+// ── Download a single post as PNG ─────────────────────────────
+async function downloadPost(btn,n){
+  const gi=btn.closest('.gi');
+  const pi=gi.querySelector('.pi');
+  const orig=btn.textContent;
+  btn.textContent='Generating…';
+  btn.disabled=true;
+  try{
+    // 1. Clone the post (1080×1350, unscaled)
+    const clone=pi.cloneNode(true);
+    clone.style.cssText='position:relative;width:1080px;height:1350px;transform:none;overflow:hidden;';
+
+    // 2. Replace canvas elements with their data-URL snapshots
+    const origCanvases=pi.querySelectorAll('canvas');
+    const cloneCanvases=clone.querySelectorAll('canvas');
+    origCanvases.forEach((oc,i)=>{
+      const img=document.createElement('img');
+      img.src=oc.toDataURL('image/png');
+      img.style.cssText=oc.style.cssText;
+      cloneCanvases[i].replaceWith(img);
+    });
+
+    // 3. Collect all page CSS
+    const css=[...document.styleSheets].reduce((acc,ss)=>{
+      try{return acc+[...ss.cssRules].map(r=>r.cssText).join('');}
+      catch(e){return acc;}
+    },'');
+
+    // 4. Build SVG with foreignObject
+    const svgSrc=`<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350">
+<foreignObject x="0" y="0" width="1080" height="1350">
+<div xmlns="http://www.w3.org/1999/xhtml" style="width:1080px;height:1350px;overflow:hidden;margin:0;padding:0;">
+<style>${css}</style>
+${clone.outerHTML}
+</div>
+</foreignObject>
+</svg>`;
+
+    const svgBlob=new Blob([svgSrc],{type:'image/svg+xml;charset=utf-8'});
+    const svgUrl=URL.createObjectURL(svgBlob);
+
+    // 5. Draw SVG → canvas → PNG blob → download
+    await new Promise((res,rej)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement('canvas');
+        c.width=1080;c.height=1350;
+        c.getContext('2d').drawImage(img,0,0,1080,1350);
+        URL.revokeObjectURL(svgUrl);
+        c.toBlob(pngBlob=>{
+          const a=document.createElement('a');
+          a.href=URL.createObjectURL(pngBlob);
+          a.download=`joesbrew-showcase-${String(n).padStart(2,'0')}.png`;
+          a.click();
+          setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+          res();
+        },'image/png');
+      };
+      img.onerror=rej;
+      img.src=svgUrl;
+    });
+
+    btn.textContent='✓ Saved';
+    setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2200);
+  }catch(err){
+    console.error(err);
+    btn.textContent='✗ Try in Chrome';
+    setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},3000);
+  }
+}
+
+// ── Download all posts sequentially ──────────────────────────
+async function downloadAll(){
+  const allBtn=document.querySelector('.dl-all');
+  allBtn.textContent='Downloading…';
+  allBtn.disabled=true;
+  const btns=[...document.querySelectorAll('.dl')];
+  for(let i=0;i<btns.length;i++){
+    allBtn.textContent=`Downloading ${i+1} / ${btns.length}…`;
+    await downloadPost(btns[i],i+1);
+    await new Promise(r=>setTimeout(r,600));
+  }
+  allBtn.textContent='✓ All Downloaded';
+  setTimeout(()=>{allBtn.textContent='↓ Download All 10 Posts';allBtn.disabled=false;},3000);
+}
+
+// Canvas ambient glows
+function glow(id,stops){
+  const c=document.getElementById(id);
+  if(!c)return;
+  const ctx=c.getContext('2d'),w=c.width,h=c.height;
+  ctx.clearRect(0,0,w,h);
+  stops.forEach(([x,y,r,col])=>{
+    const g=ctx.createRadialGradient(x*w,y*h,0,x*w,y*h,r*Math.max(w,h));
+    g.addColorStop(0,col);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  });
+}
+window.addEventListener('load',()=>{
+  glow('c1',[[.5,1.1,.75,'rgba(200,130,40,.25)'],[.5,.6,.55,'rgba(200,162,106,.1)'],[.85,.1,.4,'rgba(160,90,20,.07)']]);
+  glow('c3',[[.5,.48,.65,'rgba(200,162,106,.16)'],[.5,1.0,.5,'rgba(200,120,40,.1)']]);
+  glow('c5',[[.5,.5,.7,'rgba(200,162,106,.12)'],[.1,.9,.4,'rgba(200,100,30,.06)']]);
+  glow('c6',[[.5,.45,.6,'rgba(200,162,106,.12)'],[.8,.1,.4,'rgba(180,90,20,.06)']]);
+  glow('c8',[[.5,1.0,.75,'rgba(200,130,40,.2)'],[.5,.5,.5,'rgba(200,162,106,.07)']]);
+  glow('c9',[[.5,.55,.8,'rgba(200,162,106,.15)'],[.5,1.1,.65,'rgba(200,120,40,.12)']]);
+  glow('c10',[[.5,.6,.85,'rgba(200,162,106,.14)'],[.5,1.2,.7,'rgba(200,130,40,.12)'],[.9,.3,.35,'rgba(200,162,106,.05)']]);
+});
+</script>
+</body>
+</html>

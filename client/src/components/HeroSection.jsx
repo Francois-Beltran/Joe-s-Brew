@@ -1,9 +1,12 @@
 import { useReveal } from '../hooks/useReveal'
+import { useBranch } from '../context/BranchContext'
+import CrossfadeImage from './CrossfadeImage'
 
 export default function HeroSection() {
   const headingRef = useReveal(0,   0.1)
   const subRef     = useReveal(120, 0.1)
   const ctaRef     = useReveal(240, 0.1)
+  const { branch } = useBranch()
 
   const scrollToMenu = () =>
     document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })
@@ -13,13 +16,11 @@ export default function HeroSection() {
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Background image */}
-      <img
-        src="/images/web-background.jpg"
+      {/* Background image — crossfades between the selected branch's photos */}
+      <CrossfadeImage
+        images={branch.images}
         alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ transform: 'translate3d(0,0,0)' }}
+        className="w-full h-full object-cover"
       />
 
       {/* Dark gradient for legibility */}
@@ -39,6 +40,14 @@ export default function HeroSection() {
             boxShadow:            '0 12px 48px rgba(0,0,0,0.35)',
           }}
         >
+          <p
+            key={branch.id}
+            className="font-heading text-brew-beige/80 text-xs md:text-sm tracking-[0.3em] uppercase mb-3 transition-opacity duration-700"
+            style={{ animation: 'fadeIn 0.7s ease-in-out' }}
+          >
+            {branch.emoji} {branch.label} Branch
+          </p>
+
           <h1
             ref={headingRef}
             className="reveal font-heading text-6xl md:text-8xl text-brew-beige tracking-wider leading-none"
